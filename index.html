@@ -74,6 +74,7 @@
             border-radius: 8px;
             cursor: pointer;
             font-size: 1rem;
+            font-family: inherit;
         }
 
         button:hover {
@@ -85,9 +86,13 @@
         }
 
         #googleSignInButton {
-            margin-top: 25px;
-            display: flex;
-            justify-content: center;
+            display: block;
+            margin: 25px auto 0;
+            min-width: 240px;
+        }
+
+        #loadingScreen {
+            text-align: center;
         }
 
         #playerScreen {
@@ -168,12 +173,8 @@
             opacity: 0.7;
         }
 
-        #loadingMessage,
         #errorMessage {
             text-align: center;
-        }
-
-        #errorMessage {
             color: #ffb0b0;
             margin-top: 20px;
         }
@@ -186,7 +187,7 @@
 
     <main class="panel">
 
-        <!-- LOGIN -->
+        <!-- LOGIN SCREEN -->
         <section id="loginScreen">
 
             <h1>Solus Dynasty RPG</h1>
@@ -199,17 +200,28 @@
                 Sign in with your Google account to access your RPG progress.
             </p>
 
-            <div id="googleSignInButton"></div>
+            <button
+                id="googleSignInButton"
+                type="button"
+            >
+                Sign in with Google
+            </button>
 
-            <p id="errorMessage" class="hidden"></p>
+            <p
+                id="errorMessage"
+                class="hidden"
+            ></p>
 
         </section>
 
 
-        <!-- LOADING -->
-        <section id="loadingScreen" class="hidden">
+        <!-- LOADING SCREEN -->
+        <section
+            id="loadingScreen"
+            class="hidden"
+        >
 
-            <p id="loadingMessage">
+            <p>
                 Loading your RPG data...
             </p>
 
@@ -225,17 +237,20 @@
 
                     <div
                         id="playerName"
-                        class="player-name">
-                    </div>
+                        class="player-name"
+                    ></div>
 
                     <div
                         id="playerEmail"
-                        class="player-email">
-                    </div>
+                        class="player-email"
+                    ></div>
 
                 </div>
 
-                <button id="signOutButton">
+                <button
+                    id="signOutButton"
+                    type="button"
+                >
                     Sign Out
                 </button>
 
@@ -247,67 +262,82 @@
             <div class="stats">
 
                 <div class="stat-card">
+
                     <div class="stat-label">
                         Star
                     </div>
 
                     <div
                         id="starValue"
-                        class="stat-value">
+                        class="stat-value"
+                    >
                         Not Started
                     </div>
+
                 </div>
 
 
                 <div class="stat-card">
+
                     <div class="stat-label">
                         Court
                     </div>
 
                     <div
                         id="courtValue"
-                        class="stat-value">
+                        class="stat-value"
+                    >
                         Not Established
                     </div>
+
                 </div>
 
 
                 <div class="stat-card">
+
                     <div class="stat-label">
                         Essence
                     </div>
 
                     <div
                         id="essenceValue"
-                        class="stat-value">
+                        class="stat-value"
+                    >
                         Not Awakened
                     </div>
+
                 </div>
 
 
                 <div class="stat-card">
+
                     <div class="stat-label">
                         Level
                     </div>
 
                     <div
                         id="levelValue"
-                        class="stat-value">
+                        class="stat-value"
+                    >
                         1
                     </div>
+
                 </div>
 
 
                 <div class="stat-card">
+
                     <div class="stat-label">
                         EXP
                     </div>
 
                     <div
                         id="expValue"
-                        class="stat-value">
+                        class="stat-value"
+                    >
                         0
                     </div>
+
                 </div>
 
             </div>
@@ -319,7 +349,9 @@
 
                 <button
                     id="birthBookButton"
-                    class="action-button">
+                    class="action-button"
+                    type="button"
+                >
 
                     <span class="action-title">
                         Birth Book
@@ -334,7 +366,9 @@
 
                 <button
                     id="comingOfAgeButton"
-                    class="action-button">
+                    class="action-button"
+                    type="button"
+                >
 
                     <span class="action-title">
                         Coming of Age
@@ -349,7 +383,9 @@
 
                 <button
                     id="echoesButton"
-                    class="action-button">
+                    class="action-button"
+                    type="button"
+                >
 
                     <span class="action-title">
                         Echoes
@@ -364,7 +400,9 @@
 
                 <button
                     id="experiencesButton"
-                    class="action-button">
+                    class="action-button"
+                    type="button"
+                >
 
                     <span class="action-title">
                         Experiences
@@ -389,12 +427,13 @@
 
     /*
     ============================================================
-    FIREBASE
+    FIREBASE IMPORTS
     ============================================================
     */
 
-    import { initializeApp }
-        from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+    import {
+        initializeApp
+    } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
 
     import {
         getAuth,
@@ -402,8 +441,7 @@
         signInWithPopup,
         onAuthStateChanged,
         signOut
-    }
-        from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+    } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-auth.js";
 
     import {
         getFirestore,
@@ -411,8 +449,7 @@
         getDoc,
         setDoc,
         serverTimestamp
-    }
-        from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+    } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
 
 
     /*
@@ -439,7 +476,7 @@
             "136636530132",
 
         appId:
-            "1:136636530132:web:6c77757f59f365be0c6a41",
+            "1:136636530132:web:6c77757f59f365f365be0c6a41",
 
         measurementId:
             "G-S6PXC09F52"
@@ -467,7 +504,7 @@
 
     /*
     ============================================================
-    DOM
+    DOM ELEMENTS
     ============================================================
     */
 
@@ -513,7 +550,7 @@
 
     /*
     ============================================================
-    SHOW ERROR
+    ERROR DISPLAY
     ============================================================
     */
 
@@ -523,6 +560,22 @@
             message;
 
         errorMessage.classList.remove(
+            "hidden"
+        );
+    }
+
+
+    /*
+    ============================================================
+    ERROR CLEAR
+    ============================================================
+    */
+
+    function clearError() {
+
+        errorMessage.textContent = "";
+
+        errorMessage.classList.add(
             "hidden"
         );
     }
@@ -559,12 +612,12 @@
         loginScreen.style.display =
             "none";
 
-        playerScreen.style.display =
-            "none";
-
         loadingScreen.classList.remove(
             "hidden"
         );
+
+        playerScreen.style.display =
+            "none";
     }
 
 
@@ -639,7 +692,8 @@
             );
 
             return {
-                exists: false
+                exists: false,
+                data: null
             };
         }
 
@@ -663,20 +717,20 @@
     ============================================================
     */
 
-    function displayPlayerData(user, record) {
+    function displayPlayerData(user) {
 
         playerName.textContent =
             user.displayName ||
             "Player";
 
         playerEmail.textContent =
-            user.email || "";
-
+            user.email ||
+            "";
 
         /*
         --------------------------------------------------------
-        CURRENTLY THESE ARE PLACEHOLDERS.
-        WE HAVE NOT CONNECTED THE BIRTH BOOK YET.
+        THESE ARE TEMPORARY DISPLAY VALUES.
+        BIRTH BOOK DATA WILL BE CONNECTED NEXT.
         --------------------------------------------------------
         */
 
@@ -707,11 +761,12 @@
         "click",
         async () => {
 
-            try {
+            clearError();
 
-                errorMessage.classList.add(
-                    "hidden"
-                );
+            googleSignInButton.disabled =
+                true;
+
+            try {
 
                 await signInWithPopup(
                     auth,
@@ -728,6 +783,9 @@
                 showError(
                     "Google sign-in could not be completed."
                 );
+
+                googleSignInButton.disabled =
+                    false;
             }
         }
     );
@@ -735,7 +793,7 @@
 
     /*
     ============================================================
-    AUTH STATE
+    AUTHENTICATION STATE
     ============================================================
     */
 
@@ -744,6 +802,9 @@
         async (user) => {
 
             if (!user) {
+
+                googleSignInButton.disabled =
+                    false;
 
                 showLogin();
 
@@ -755,14 +816,12 @@
 
                 showLoading();
 
-                const record =
-                    await loadPlayerRecord(
-                        user
-                    );
+                await loadPlayerRecord(
+                    user
+                );
 
                 displayPlayerData(
-                    user,
-                    record
+                    user
                 );
 
                 showPlayerHub();
@@ -804,6 +863,10 @@
                     "Sign-out error:",
                     error
                 );
+
+                showError(
+                    "Unable to sign out."
+                );
             }
         }
     );
@@ -811,7 +874,7 @@
 
     /*
     ============================================================
-    BUTTONS
+    BIRTH BOOK
     ============================================================
     */
 
@@ -827,6 +890,12 @@
         );
 
 
+    /*
+    ============================================================
+    COMING OF AGE
+    ============================================================
+    */
+
     document
         .getElementById("comingOfAgeButton")
         .addEventListener(
@@ -834,11 +903,17 @@
             () => {
 
                 alert(
-                    "Coming of Age will be available when the character meets its requirements."
+                    "Coming of Age will be connected here."
                 );
             }
         );
 
+
+    /*
+    ============================================================
+    ECHOES
+    ============================================================
+    */
 
     document
         .getElementById("echoesButton")
@@ -852,6 +927,12 @@
             }
         );
 
+
+    /*
+    ============================================================
+    EXPERIENCES
+    ============================================================
+    */
 
     document
         .getElementById("experiencesButton")
