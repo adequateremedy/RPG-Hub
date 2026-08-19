@@ -135,20 +135,19 @@
 
         .welcome-message {
             text-align: center;
-            margin: 20px 0 30px;
+            margin: 25px 0 30px;
             line-height: 1.6;
         }
 
-        .stats-section,
-        .actions-section {
-            margin-top: 25px;
+        .stats-section {
+            margin-top: 20px;
         }
 
         .stats {
             display: grid;
             grid-template-columns: repeat(
                 auto-fit,
-                minmax(180px, 1fr)
+                minmax(160px, 1fr)
             );
             gap: 15px;
         }
@@ -170,6 +169,10 @@
 
         .stat-value {
             font-size: 1.2rem;
+        }
+
+        .actions-section {
+            margin-top: 35px;
         }
 
         .actions {
@@ -265,6 +268,8 @@
 
         <section id="playerScreen">
 
+            <!-- PLAYER LOGIN INFORMATION -->
+
             <div class="player-header">
 
                 <div class="player-info">
@@ -291,51 +296,134 @@
             </div>
 
 
-            <!-- ==============================================
+            <!-- ==================================================
                  NEW PLAYER MESSAGE
-                 ============================================== -->
+                 ================================================== -->
 
             <div
                 id="newPlayerMessage"
-                class="welcome-message hidden"
+                class="welcome-message"
             >
                 <p>
-                    Your RPG journey has not yet begun.
+                    <strong>Your RPG journey has not yet begun.</strong>
                 </p>
 
                 <p>
-                    Begin with the Birth Book.
+                    You must begin with the Birth Book.
                 </p>
             </div>
 
 
-            <!-- ==============================================
-                 CHARACTER INFORMATION
-                 ============================================== -->
+            <!-- ==================================================
+                 CHARACTER STATS
+                 ALWAYS VISIBLE
+                 ================================================== -->
 
-            <section
-                id="statsSection"
-                class="stats-section hidden"
-            >
+            <section class="stats-section">
 
-                <h2>Character Progress</h2>
+                <h2>Character Stats</h2>
 
-                <div
-                    id="statsContainer"
-                    class="stats"
-                ></div>
+                <div class="stats">
+
+                    <!-- NAME -->
+
+                    <div class="stat-card">
+
+                        <div class="stat-label">
+                            Name
+                        </div>
+
+                        <div
+                            id="nameValue"
+                            class="stat-value"
+                        >
+                            Not Established
+                        </div>
+
+                    </div>
+
+
+                    <!-- COURT -->
+
+                    <div class="stat-card">
+
+                        <div class="stat-label">
+                            Court
+                        </div>
+
+                        <div
+                            id="courtValue"
+                            class="stat-value"
+                        >
+                            Not Established
+                        </div>
+
+                    </div>
+
+
+                    <!-- ESSENCE -->
+
+                    <div class="stat-card">
+
+                        <div class="stat-label">
+                            Essence
+                        </div>
+
+                        <div
+                            id="essenceValue"
+                            class="stat-value"
+                        >
+                            Not Established
+                        </div>
+
+                    </div>
+
+
+                    <!-- EXP -->
+
+                    <div class="stat-card">
+
+                        <div class="stat-label">
+                            EXP
+                        </div>
+
+                        <div
+                            id="expValue"
+                            class="stat-value"
+                        >
+                            0
+                        </div>
+
+                    </div>
+
+
+                    <!-- LEVEL -->
+
+                    <div class="stat-card">
+
+                        <div class="stat-label">
+                            Lvl
+                        </div>
+
+                        <div
+                            id="levelValue"
+                            class="stat-value"
+                        >
+                            1
+                        </div>
+
+                    </div>
+
+                </div>
 
             </section>
 
 
-            <!-- ==============================================
+            <!-- ==================================================
                  AVAILABLE ACTIONS
-                 ============================================== -->
+                 ================================================== -->
 
-            <section
-                id="actionsSection"
-                class="actions-section"
-            >
+            <section class="actions-section">
 
                 <h2>Available</h2>
 
@@ -475,14 +563,29 @@
             "newPlayerMessage"
         );
 
-    const statsSection =
+    const nameValue =
         document.getElementById(
-            "statsSection"
+            "nameValue"
         );
 
-    const statsContainer =
+    const courtValue =
         document.getElementById(
-            "statsContainer"
+            "courtValue"
+        );
+
+    const essenceValue =
+        document.getElementById(
+            "essenceValue"
+        );
+
+    const expValue =
+        document.getElementById(
+            "expValue"
+        );
+
+    const levelValue =
+        document.getElementById(
+            "levelValue"
         );
 
     const actionsContainer =
@@ -531,7 +634,7 @@
 
     /*
     ============================================================
-    SCREEN CONTROL
+    SHOW LOGIN
     ============================================================
     */
 
@@ -549,6 +652,12 @@
     }
 
 
+    /*
+    ============================================================
+    SHOW LOADING
+    ============================================================
+    */
+
     function showLoading() {
 
         loginScreen.style.display =
@@ -562,6 +671,12 @@
             "none";
     }
 
+
+    /*
+    ============================================================
+    SHOW PLAYER HUB
+    ============================================================
+    */
 
     function showPlayerHub() {
 
@@ -579,7 +694,7 @@
 
     /*
     ============================================================
-    CREATE PLAYER RECORD IF NEEDED
+    CREATE / LOAD PLAYER RECORD
     ============================================================
     */
 
@@ -646,88 +761,85 @@
 
     /*
     ============================================================
-    CLEAR DYNAMIC HUB CONTENT
+    RESET DISPLAY TO CURRENT SAVED STATE
     ============================================================
     */
 
-    function clearHubContent() {
+    function updateStats(playerData) {
 
-        statsContainer.innerHTML = "";
+        /*
+        --------------------------------------------------------
+        NAME
+        --------------------------------------------------------
+        */
+
+        nameValue.textContent =
+            playerData.characterName ||
+            "Not Established";
+
+
+        /*
+        --------------------------------------------------------
+        COURT
+        --------------------------------------------------------
+        */
+
+        courtValue.textContent =
+            playerData.court ||
+            "Not Established";
+
+
+        /*
+        --------------------------------------------------------
+        ESSENCE
+        --------------------------------------------------------
+        */
+
+        essenceValue.textContent =
+            playerData.essenceType ||
+            "Not Established";
+
+
+        /*
+        --------------------------------------------------------
+        EXP
+        --------------------------------------------------------
+        */
+
+        expValue.textContent =
+            playerData.exp !== undefined
+                ? String(playerData.exp)
+                : "0";
+
+
+        /*
+        --------------------------------------------------------
+        LEVEL
+        --------------------------------------------------------
+        */
+
+        levelValue.textContent =
+            playerData.level !== undefined
+                ? String(playerData.level)
+                : "1";
+    }
+
+
+    /*
+    ============================================================
+    CLEAR AVAILABLE ACTIONS
+    ============================================================
+    */
+
+    function clearActions() {
 
         actionsContainer.innerHTML = "";
-
-        statsSection.classList.add(
-            "hidden"
-        );
-
-        newPlayerMessage.classList.add(
-            "hidden"
-        );
     }
 
 
     /*
     ============================================================
-    ADD A STAT CARD
-    ============================================================
-    */
-
-    function addStat(
-        label,
-        value
-    ) {
-
-        const card =
-            document.createElement(
-                "div"
-            );
-
-        card.className =
-            "stat-card";
-
-        const labelElement =
-            document.createElement(
-                "div"
-            );
-
-        labelElement.className =
-            "stat-label";
-
-        labelElement.textContent =
-            label;
-
-        const valueElement =
-            document.createElement(
-                "div"
-            );
-
-        valueElement.className =
-            "stat-value";
-
-        valueElement.textContent =
-            value;
-
-        card.appendChild(
-            labelElement
-        );
-
-        card.appendChild(
-            valueElement
-        );
-
-        statsContainer.appendChild(
-            card
-        );
-
-        statsSection.classList.remove(
-            "hidden"
-        );
-    }
-
-
-    /*
-    ============================================================
-    ADD AN ACTION
+    ADD AVAILABLE ACTION
     ============================================================
     */
 
@@ -791,7 +903,113 @@
 
     /*
     ============================================================
-    BUILD HUB FROM SAVED STATE
+    BUILD AVAILABLE MENU
+    ============================================================
+    */
+
+    function buildAvailableMenu(playerData) {
+
+        clearActions();
+
+
+        /*
+        --------------------------------------------------------
+        NO BIRTH BOOK COMPLETED
+        --------------------------------------------------------
+        --------------------------------------------------------
+        This means the player has not yet created their first
+        character.
+        --------------------------------------------------------
+        */
+
+        const birthBookCompleted =
+            playerData.birthBookCompleted === true;
+
+
+        if (!birthBookCompleted) {
+
+            addAction(
+                "Birth Book",
+                "Begin the first step of your character's journey.",
+                () => {
+
+                    window.location.href =
+                        "https://adequateremedy.github.io/BirthBook/";
+                }
+            );
+
+            return;
+        }
+
+
+        /*
+        --------------------------------------------------------
+        BIRTH BOOK IS COMPLETE
+        --------------------------------------------------------
+        --------------------------------------------------------
+        Additional activities will only appear when their
+        specific unlock conditions have actually been saved.
+        --------------------------------------------------------
+        */
+
+
+        if (
+            playerData.comingOfAgeUnlocked === true &&
+            playerData.comingOfAgeCompleted !== true
+        ) {
+
+            addAction(
+                "Coming of Age",
+                "Discover the character's Essence.",
+                () => {
+
+                    alert(
+                        "Coming of Age is unlocked."
+                    );
+                }
+            );
+        }
+
+
+        if (
+            playerData.echoesUnlocked === true
+        ) {
+
+            addAction(
+                "Echoes",
+                "Daily-life activities available to this character.",
+                () => {
+
+                    alert(
+                        "Echoes is unlocked."
+                    );
+                }
+            );
+        }
+
+
+        if (
+            playerData.experiencesUnlocked === true
+        ) {
+
+            addAction(
+                "Experiences",
+                "Character experiences available to this character.",
+                () => {
+
+                    alert(
+                        "Experiences is unlocked."
+                    );
+                }
+            );
+        }
+
+    }
+
+
+    /*
+    ============================================================
+    BUILD PLAYER HUB
     ============================================================
     */
 
@@ -799,9 +1017,6 @@
         user,
         playerData
     ) {
-
-        clearHubContent();
-
 
         /*
         --------------------------------------------------------
@@ -822,282 +1037,46 @@
 
         /*
         --------------------------------------------------------
-        HAS THE PLAYER STARTED A STAR?
-        --------------------------------------------------------
-        --------------------------------------------------------
-        IMPORTANT:
-        We are NOT assuming that simply having a Firebase
-        account means the player has a character.
+        UPDATE STATS
         --------------------------------------------------------
         */
 
-        const hasStar =
-            playerData.starEstablished === true;
+        updateStats(
+            playerData
+        );
 
 
         /*
-        ========================================================
-        BRAND-NEW PLAYER
-        ========================================================
+        --------------------------------------------------------
+        NEW PLAYER MESSAGE
+        --------------------------------------------------------
         */
 
-        if (!hasStar) {
+        if (
+            playerData.birthBookCompleted !== true
+        ) {
 
             newPlayerMessage.classList.remove(
                 "hidden"
             );
 
+        } else {
 
-            /*
-            ----------------------------------------------------
-            ONLY AVAILABLE ACTION
-            ----------------------------------------------------
-            */
-
-            addAction(
-                "Birth Book",
-                "Begin the first step of your character's journey.",
-                () => {
-
-                    window.location.href =
-                        "https://adequateremedy.github.io/BirthBook/";
-
-                }
+            newPlayerMessage.classList.add(
+                "hidden"
             );
-
-            return;
-        }
-
-
-        /*
-        ========================================================
-        STAR EXISTS
-        ========================================================
-        */
-
-        /*
-        --------------------------------------------------------
-        STAR INFORMATION
-        --------------------------------------------------------
-        */
-
-        if (
-            playerData.starNumber !==
-            undefined
-        ) {
-
-            addStat(
-                "Star",
-                String(
-                    playerData.starNumber
-                )
-            );
-
         }
 
 
         /*
         --------------------------------------------------------
-        COURT
-        --------------------------------------------------------
-        */
-
-        if (
-            playerData.court
-        ) {
-
-            addStat(
-                "Court",
-                playerData.court
-            );
-
-        }
-
-
-        /*
-        --------------------------------------------------------
-        PARENT COURT
-        --------------------------------------------------------
-        */
-
-        if (
-            playerData.parentCourt
-        ) {
-
-            addStat(
-                "Parent Court",
-                playerData.parentCourt
-            );
-
-        }
-
-
-        /*
-        --------------------------------------------------------
-        ESSENCE
-        --------------------------------------------------------
-        */
-
-        if (
-            playerData.essenceType
-        ) {
-
-            addStat(
-                "Essence",
-                playerData.essenceType
-            );
-
-        }
-
-
-        /*
-        --------------------------------------------------------
-        TRIGGER FEELING
-        --------------------------------------------------------
-        */
-
-        if (
-            playerData.triggerFeeling
-        ) {
-
-            addStat(
-                "Trigger Feeling",
-                playerData.triggerFeeling
-            );
-
-        }
-
-
-        /*
-        --------------------------------------------------------
-        LEVEL
-        --------------------------------------------------------
-        */
-
-        if (
-            playerData.level !==
-            undefined
-        ) {
-
-            addStat(
-                "Level",
-                String(
-                    playerData.level
-                )
-            );
-
-        }
-
-
-        /*
-        --------------------------------------------------------
-        EXP
-        --------------------------------------------------------
-        */
-
-        if (
-            playerData.exp !==
-            undefined
-        ) {
-
-            addStat(
-                "EXP",
-                String(
-                    playerData.exp
-                )
-            );
-
-        }
-
-
-        /*
-        ========================================================
         AVAILABLE ACTIONS
-        ========================================================
-        */
-
-        /*
-        --------------------------------------------------------
-        COMING OF AGE
-        --------------------------------------------------------
-        Only appears when the saved character has actually
-        reached whatever requirement we establish for it.
         --------------------------------------------------------
         */
 
-        if (
-            playerData.comingOfAgeUnlocked === true &&
-            playerData.comingOfAgeCompleted !== true
-        ) {
-
-            addAction(
-                "Coming of Age",
-                "Discover the character's Essence.",
-                () => {
-
-                    alert(
-                        "Coming of Age is unlocked."
-                    );
-
-                }
-            );
-
-        }
-
-
-        /*
-        --------------------------------------------------------
-        ECHOES
-        --------------------------------------------------------
-        Only display when explicitly unlocked.
-        --------------------------------------------------------
-        */
-
-        if (
-            playerData.echoesUnlocked === true
-        ) {
-
-            addAction(
-                "Echoes",
-                "Daily-life activities available to this character.",
-                () => {
-
-                    alert(
-                        "Echoes is unlocked."
-                    );
-
-                }
-            );
-
-        }
-
-
-        /*
-        --------------------------------------------------------
-        EXPERIENCES
-        --------------------------------------------------------
-        Only display when explicitly unlocked.
-        --------------------------------------------------------
-        */
-
-        if (
-            playerData.experiencesUnlocked === true
-        ) {
-
-            addAction(
-                "Experiences",
-                "Character experiences available to this character.",
-                () => {
-
-                    alert(
-                        "Experiences is unlocked."
-                    );
-
-                }
-            );
-
-        }
-
+        buildAvailableMenu(
+            playerData
+        );
     }
 
 
@@ -1145,7 +1124,9 @@
                         `\n\nFirebase error: ${error.code}`;
                 }
 
-                showError(message);
+                showError(
+                    message
+                );
 
                 googleSignInButton.disabled =
                     false;
@@ -1159,7 +1140,7 @@
 
     /*
     ============================================================
-    AUTH STATE
+    AUTHENTICATION STATE
     ============================================================
     */
 
@@ -1230,7 +1211,9 @@
 
             try {
 
-                await signOut(auth);
+                await signOut(
+                    auth
+                );
 
             } catch (error) {
 
