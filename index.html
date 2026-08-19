@@ -305,7 +305,10 @@
                 class="welcome-message"
             >
                 <p>
-                    <strong>Your RPG journey has not yet begun.</strong>
+                    <strong>
+                        You have not established a Star in the
+                        Solus Dynasty Universe yet.
+                    </strong>
                 </p>
 
                 <p>
@@ -761,7 +764,7 @@
 
     /*
     ============================================================
-    RESET DISPLAY TO CURRENT SAVED STATE
+    UPDATE CHARACTER STATS
     ============================================================
     */
 
@@ -916,10 +919,6 @@
         --------------------------------------------------------
         NO BIRTH BOOK COMPLETED
         --------------------------------------------------------
-        --------------------------------------------------------
-        This means the player has not yet created their first
-        character.
-        --------------------------------------------------------
         */
 
         const birthBookCompleted =
@@ -944,14 +943,12 @@
 
         /*
         --------------------------------------------------------
-        BIRTH BOOK IS COMPLETE
+        BIRTH BOOK COMPLETE
         --------------------------------------------------------
-        --------------------------------------------------------
-        Additional activities will only appear when their
-        specific unlock conditions have actually been saved.
+        Additional activities will only appear after their
+        actual unlock conditions have been saved.
         --------------------------------------------------------
         */
-
 
         if (
             playerData.comingOfAgeUnlocked === true &&
@@ -1037,7 +1034,7 @@
 
         /*
         --------------------------------------------------------
-        UPDATE STATS
+        CHARACTER STATS
         --------------------------------------------------------
         */
 
@@ -1048,7 +1045,7 @@
 
         /*
         --------------------------------------------------------
-        NEW PLAYER MESSAGE
+        NEW STAR MESSAGE
         --------------------------------------------------------
         */
 
