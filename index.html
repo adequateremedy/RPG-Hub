@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Solus Dynasty RPG — Hub</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            min-height: 100%;
+            font-family: Georgia, "Times New Roman", serif;
+            background: #111;
+            color: #eee;
+        }
+
+        body {
+            min-height: 100vh;
+        }
+
+        #app {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+        }
+
+        .panel {
+            width: min(900px, 100%);
+            background: rgba(20, 20, 20, 0.96);
+            border: 1px solid #444;
+            border-radius: 14px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+        }
+
+        h1,
+        h2 {
+            margin-top: 0;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.2rem;
+            letter-spacing: 0.08em;
+        }
+
+        .subtitle {
+            text-align: center;
+            opacity: 0.75;
+            margin-bottom: 35px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        button {
+            border: 1px solid #777;
+            background: #222;
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        button:hover {
+            background: #333;
+        }
+
+        #loginScreen {
+            text-align: center;
+        }
+
+        #googleSignInButton {
+            margin-top: 25px;
+            display: flex;
+            justify-content: center;
+        }
+
+        #playerScreen {
+            display: none;
+        }
+
+        .player-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #444;
+        }
+
+        .player-info {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .player-name {
+            font-size: 1.4rem;
+        }
+
+        .player-email {
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 35px;
+        }
+
+        .stat-card {
+            border: 1px solid #444;
+            border-radius: 10px;
+            padding: 18px;
+            background: #191919;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            opacity: 0.65;
+            margin-bottom: 7px;
+        }
+
+        .stat-value {
+            font-size: 1.2rem;
+        }
+
+        .actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+        }
+
+        .action-button {
+            min-height: 90px;
+            text-align: left;
+        }
+
+        .action-title {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+
+        .action-description {
+            display: block;
+            font-size: 0.85rem;
+            opacity: 0.7;
+        }
+
+        #loadingMessage,
+        #errorMessage {
+            text-align: center;
+        }
+
+        #errorMessage {
+            color: #ffb0b0;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div id="app">
+
+    <main class="panel">
+
+        <!-- LOGIN -->
+        <section id="loginScreen">
+
+            <h1>Solus Dynasty RPG</h1>
+
+            <p class="subtitle">
+                RPG Hub
+            </p>
+
+            <p>
+                Sign in with your Google account to access your RPG progress.
+            </p>
+
+            <div id="googleSignInButton"></div>
+
+            <p id="errorMessage" class="hidden"></p>
+
+        </section>
+
+
+        <!-- LOADING -->
+        <section id="loadingScreen" class="hidden">
+
+            <p id="loadingMessage">
+                Loading your RPG data...
+            </p>
+
+        </section>
+
+
+        <!-- PLAYER HUB -->
+        <section id="playerScreen">
+
+            <div class="player-header">
+
+                <div class="player-info">
+
+                    <div
+                        id="playerName"
+                        class="player-name">
+                    </div>
+
+                    <div
+                        id="playerEmail"
+                        class="player-email">
+                    </div>
+
+                </div>
+
+                <button id="signOutButton">
+                    Sign Out
+                </button>
+
+            </div>
+
+
+            <h2>Character Progress</h2>
+
+            <div class="stats">
+
+                <div class="stat-card">
+                    <div class="stat-label">
+                        Star
+                    </div>
+
+                    <div
+                        id="starValue"
+                        class="stat-value">
+                        Not Started
+                    </div>
+                </div>
+
+
+                <div class="stat-card">
+                    <div class="stat-label">
+                        Court
+                    </div>
+
+                    <div
+                        id="courtValue"
+                        class="stat-value">
+                        Not Established
+                    </div>
+                </div>
+
+
+                <div class="stat-card">
+                    <div class="stat-label">
+                        Essence
+                    </div>
+
+                    <div
+                        id="essenceValue"
+                        class="stat-value">
+                        Not Awakened
+                    </div>
+                </div>
+
+
+                <div class="stat-card">
+                    <div class="stat-label">
+                        Level
+                    </div>
+
+                    <div
+                        id="levelValue"
+                        class="stat-value">
+                        1
+                    </div>
+                </div>
+
+
+                <div class="stat-card">
+                    <div class="stat-label">
+                        EXP
+                    </div>
+
+                    <div
+                        id="expValue"
+                        class="stat-value">
+                        0
+                    </div>
+                </div>
+
+            </div>
+
+
+            <h2>Available</h2>
+
+            <div class="actions">
+
+                <button
+                    id="birthBookButton"
+                    class="action-button">
+
+                    <span class="action-title">
+                        Birth Book
+                    </span>
+
+                    <span class="action-description">
+                        Establish the character's birth result.
+                    </span>
+
+                </button>
+
+
+                <button
+                    id="comingOfAgeButton"
+                    class="action-button">
+
+                    <span class="action-title">
+                        Coming of Age
+                    </span>
+
+                    <span class="action-description">
+                        Discover the character's Essence.
+                    </span>
+
+                </button>
+
+
+                <button
+                    id="echoesButton"
+                    class="action-button">
+
+                    <span class="action-title">
+                        Echoes
+                    </span>
+
+                    <span class="action-description">
+                        Daily-life activities that can earn EXP.
+                    </span>
+
+                </button>
+
+
+                <button
+                    id="experiencesButton"
+                    class="action-button">
+
+                    <span class="action-title">
+                        Experiences
+                    </span>
+
+                    <span class="action-description">
+                        Character experiences and progression.
+                    </span>
+
+                </button>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+
+<script type="module">
+
+    /*
+    ============================================================
+    FIREBASE
+    ============================================================
+    */
+
+    import { initializeApp }
+        from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+
+    import {
+        getAuth,
+        GoogleAuthProvider,
+        signInWithPopup,
+        onAuthStateChanged,
+        signOut
+    }
+        from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+
+    import {
+        getFirestore,
+        doc,
+        getDoc,
+        setDoc,
+        serverTimestamp
+    }
+        from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+
+    /*
+    ============================================================
+    FIREBASE CONFIGURATION
+    ============================================================
+    */
+
+    const firebaseConfig = {
+
+        apiKey:
+            "AIzaSyAeyOzh9YHaQDMSvn-8-ZyVqXkwY_diL5Y",
+
+        authDomain:
+            "solus-dynasty-rpg.firebaseapp.com",
+
+        projectId:
+            "solus-dynasty-rpg",
+
+        storageBucket:
+            "solus-dynasty-rpg.firebasestorage.app",
+
+        messagingSenderId:
+            "136636530132",
+
+        appId:
+            "1:136636530132:web:6c77757f59f365be0c6a41",
+
+        measurementId:
+            "G-S6PXC09F52"
+    };
+
+
+    /*
+    ============================================================
+    INITIALIZE FIREBASE
+    ============================================================
+    */
+
+    const firebaseApp =
+        initializeApp(firebaseConfig);
+
+    const auth =
+        getAuth(firebaseApp);
+
+    const db =
+        getFirestore(firebaseApp);
+
+    const googleProvider =
+        new GoogleAuthProvider();
+
+
+    /*
+    ============================================================
+    DOM
+    ============================================================
+    */
+
+    const loginScreen =
+        document.getElementById("loginScreen");
+
+    const loadingScreen =
+        document.getElementById("loadingScreen");
+
+    const playerScreen =
+        document.getElementById("playerScreen");
+
+    const googleSignInButton =
+        document.getElementById("googleSignInButton");
+
+    const signOutButton =
+        document.getElementById("signOutButton");
+
+    const playerName =
+        document.getElementById("playerName");
+
+    const playerEmail =
+        document.getElementById("playerEmail");
+
+    const starValue =
+        document.getElementById("starValue");
+
+    const courtValue =
+        document.getElementById("courtValue");
+
+    const essenceValue =
+        document.getElementById("essenceValue");
+
+    const levelValue =
+        document.getElementById("levelValue");
+
+    const expValue =
+        document.getElementById("expValue");
+
+    const errorMessage =
+        document.getElementById("errorMessage");
+
+
+    /*
+    ============================================================
+    SHOW ERROR
+    ============================================================
+    */
+
+    function showError(message) {
+
+        errorMessage.textContent =
+            message;
+
+        errorMessage.classList.remove(
+            "hidden"
+        );
+    }
+
+
+    /*
+    ============================================================
+    SHOW LOGIN
+    ============================================================
+    */
+
+    function showLogin() {
+
+        loginScreen.style.display =
+            "block";
+
+        loadingScreen.classList.add(
+            "hidden"
+        );
+
+        playerScreen.style.display =
+            "none";
+    }
+
+
+    /*
+    ============================================================
+    SHOW LOADING
+    ============================================================
+    */
+
+    function showLoading() {
+
+        loginScreen.style.display =
+            "none";
+
+        playerScreen.style.display =
+            "none";
+
+        loadingScreen.classList.remove(
+            "hidden"
+        );
+    }
+
+
+    /*
+    ============================================================
+    SHOW PLAYER HUB
+    ============================================================
+    */
+
+    function showPlayerHub() {
+
+        loginScreen.style.display =
+            "none";
+
+        loadingScreen.classList.add(
+            "hidden"
+        );
+
+        playerScreen.style.display =
+            "block";
+    }
+
+
+    /*
+    ============================================================
+    CREATE / LOAD PLAYER RECORD
+    ============================================================
+    */
+
+    async function loadPlayerRecord(user) {
+
+        const playerRef =
+            doc(
+                db,
+                "players",
+                user.uid
+            );
+
+        const snapshot =
+            await getDoc(playerRef);
+
+
+        /*
+        --------------------------------------------------------
+        NEW PLAYER
+        --------------------------------------------------------
+        */
+
+        if (!snapshot.exists()) {
+
+            await setDoc(
+                playerRef,
+                {
+                    googleUid:
+                        user.uid,
+
+                    email:
+                        user.email || "",
+
+                    displayName:
+                        user.displayName || "",
+
+                    photoURL:
+                        user.photoURL || "",
+
+                    createdAt:
+                        serverTimestamp(),
+
+                    updatedAt:
+                        serverTimestamp()
+                }
+            );
+
+            return {
+                exists: false
+            };
+        }
+
+
+        /*
+        --------------------------------------------------------
+        EXISTING PLAYER
+        --------------------------------------------------------
+        */
+
+        return {
+            exists: true,
+            data: snapshot.data()
+        };
+    }
+
+
+    /*
+    ============================================================
+    DISPLAY PLAYER DATA
+    ============================================================
+    */
+
+    function displayPlayerData(user, record) {
+
+        playerName.textContent =
+            user.displayName ||
+            "Player";
+
+        playerEmail.textContent =
+            user.email || "";
+
+
+        /*
+        --------------------------------------------------------
+        CURRENTLY THESE ARE PLACEHOLDERS.
+        WE HAVE NOT CONNECTED THE BIRTH BOOK YET.
+        --------------------------------------------------------
+        */
+
+        starValue.textContent =
+            "Not Started";
+
+        courtValue.textContent =
+            "Not Established";
+
+        essenceValue.textContent =
+            "Not Awakened";
+
+        levelValue.textContent =
+            "1";
+
+        expValue.textContent =
+            "0";
+    }
+
+
+    /*
+    ============================================================
+    GOOGLE SIGN-IN
+    ============================================================
+    */
+
+    googleSignInButton.addEventListener(
+        "click",
+        async () => {
+
+            try {
+
+                errorMessage.classList.add(
+                    "hidden"
+                );
+
+                await signInWithPopup(
+                    auth,
+                    googleProvider
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "Google sign-in error:",
+                    error
+                );
+
+                showError(
+                    "Google sign-in could not be completed."
+                );
+            }
+        }
+    );
+
+
+    /*
+    ============================================================
+    AUTH STATE
+    ============================================================
+    */
+
+    onAuthStateChanged(
+        auth,
+        async (user) => {
+
+            if (!user) {
+
+                showLogin();
+
+                return;
+            }
+
+
+            try {
+
+                showLoading();
+
+                const record =
+                    await loadPlayerRecord(
+                        user
+                    );
+
+                displayPlayerData(
+                    user,
+                    record
+                );
+
+                showPlayerHub();
+
+            } catch (error) {
+
+                console.error(
+                    "Player load error:",
+                    error
+                );
+
+                showError(
+                    "Your RPG data could not be loaded."
+                );
+
+                showLogin();
+            }
+        }
+    );
+
+
+    /*
+    ============================================================
+    SIGN OUT
+    ============================================================
+    */
+
+    signOutButton.addEventListener(
+        "click",
+        async () => {
+
+            try {
+
+                await signOut(auth);
+
+            } catch (error) {
+
+                console.error(
+                    "Sign-out error:",
+                    error
+                );
+            }
+        }
+    );
+
+
+    /*
+    ============================================================
+    BUTTONS
+    ============================================================
+    */
+
+    document
+        .getElementById("birthBookButton")
+        .addEventListener(
+            "click",
+            () => {
+
+                window.location.href =
+                    "https://adequateremedy.github.io/BirthBook/";
+            }
+        );
+
+
+    document
+        .getElementById("comingOfAgeButton")
+        .addEventListener(
+            "click",
+            () => {
+
+                alert(
+                    "Coming of Age will be available when the character meets its requirements."
+                );
+            }
+        );
+
+
+    document
+        .getElementById("echoesButton")
+        .addEventListener(
+            "click",
+            () => {
+
+                alert(
+                    "Echoes will be connected here."
+                );
+            }
+        );
+
+
+    document
+        .getElementById("experiencesButton")
+        .addEventListener(
+            "click",
+            () => {
+
+                alert(
+                    "Experiences will be connected here."
+                );
+            }
+        );
+
+</script>
+
+</body>
+</html>
