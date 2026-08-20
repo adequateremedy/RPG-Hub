@@ -125,19 +125,21 @@
             position: relative;
             width: 600px;
             height: 900px;
-            margin: 0 auto;
+            margin: 0 auto -225px auto; /* Adjusts bottom margin for the 0.75 scale */
             background-image: url('assets/images/ui/Blank-Character-Card-Steampunk-Era.png');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
+            transform: scale(0.75);
+            transform-origin: top center;
         }
 
         .abs-stat {
             position: absolute;
             font-size: 1.1rem;
             font-weight: bold;
-            color: #000; /* Assuming dark text on light parchment spaces, adjust if needed */
-            text-shadow: 1px 1px 2px rgba(255,255,255,0.5);
+            color: #eeeeee;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
         }
 
         .abs-stat.not-configured {
@@ -159,7 +161,8 @@
             grid-template-columns: 1fr 1fr;
             row-gap: 8px;
             font-size: 1rem;
-            color: #000;
+            color: #eeeeee;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
         }
 
         .stat-label { font-weight: bold; }
