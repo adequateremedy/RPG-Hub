@@ -149,7 +149,31 @@
 
         /* Positions mapped to the card's visual layout */
         #ui-name { top: 65px; left: 150px; width: 300px; text-align: center; font-size: 1.8rem; }
-        #ui-lvl { top: 140px; right: 65px; width: 60px; text-align: center; font-size: 1.5rem; }
+        
+        #ui-lvl-container {
+            position: absolute;
+            top: 125px;
+            right: 55px;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #7F522B;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+            font-weight: bold;
+        }
+        .lvl-label {
+            font-size: 1.1rem;
+            line-height: 1;
+        }
+        #ui-lvl {
+            font-size: 1.5rem;
+            line-height: 1;
+            margin-top: 2px;
+        }
+
         #ui-exp { bottom: 35px; left: 270px; width: 60px; text-align: center; font-size: 1.2rem; }
 
         .stat-group {
@@ -279,36 +303,40 @@
                 </div>
 
                 <!-- Absolutely Positioned Elements -->
-                <div id="ui-name" class="abs-stat">Not Yet Configured</div>
+                <div id="ui-name" class="abs-stat">Unborn</div>
                 
                 <div id="edit-name-container" class="hidden">
                     <input type="text" id="edit-name-input" placeholder="Enter Character Name">
                     <button id="save-name-btn" type="button">Save</button>
                 </div>
 
-                <div id="ui-lvl" class="abs-stat">1</div>
+                <div id="ui-lvl-container">
+                    <div class="lvl-label">Lvl</div>
+                    <div id="ui-lvl">1</div>
+                </div>
+                
                 <div id="ui-exp" class="abs-stat">0</div>
 
                 <div class="stat-group">
                     <div class="stat-label">Bloodline Court:</div>
-                    <div class="stat-val abs-stat-text" id="ui-bloodline">Not Yet Configured</div>
+                    <div class="stat-val abs-stat-text" id="ui-bloodline">---</div>
 
                     <div class="stat-label">Birth Court:</div>
-                    <div class="stat-val abs-stat-text" id="ui-birthcourt">Not Yet Configured</div>
+                    <div class="stat-val abs-stat-text" id="ui-birthcourt">---</div>
 
                     <div class="stat-label">Essence Type:</div>
-                    <div class="stat-val abs-stat-text" id="ui-essence">Not Yet Configured</div>
+                    <div class="stat-val abs-stat-text" id="ui-essence">---</div>
 
                     <div class="stat-label">Trigger:</div>
-                    <div class="stat-val abs-stat-text" id="ui-trigger">Not Yet Configured</div>
+                    <div class="stat-val abs-stat-text" id="ui-trigger">---</div>
 
                     <div class="power-section">Magic Power</div>
 
-                    <div class="stat-label">Offensive: <span id="ui-off-name" style="font-weight:normal;">Not Yet Configured</span></div>
-                    <div class="stat-val">DMG: <span id="ui-off-dmg">Not Yet Configured</span></div>
+                    <div class="stat-label">Offensive: <span id="ui-off-name" style="font-weight:normal;">---</span></div>
+                    <div class="stat-val">DMG: <span id="ui-off-dmg">---</span></div>
 
-                    <div class="stat-label">Defensive: <span id="ui-def-name" style="font-weight:normal;">Not Yet Configured</span></div>
-                    <div class="stat-val">HP: <span id="ui-def-hp">Not Yet Configured</span></div>
+                    <div class="stat-label">Defensive: <span id="ui-def-name" style="font-weight:normal;">---</span></div>
+                    <div class="stat-val">HP: <span id="ui-def-hp">---</span></div>
                 </div>
             </div>
 
@@ -526,8 +554,14 @@
                 el.textContent = val;
                 el.classList.remove("not-configured");
             } else {
-                el.textContent = elementId === "ui-exp" ? "0" : (elementId === "ui-lvl" ? "1" : "Not Yet Configured");
-                if(elementId !== "ui-exp" && elementId !== "ui-lvl") el.classList.add("not-configured");
+                if (elementId === "ui-exp") {
+                    el.textContent = "0";
+                } else if (elementId === "ui-lvl") {
+                    el.textContent = "1";
+                } else {
+                    el.textContent = "---";
+                    el.classList.add("not-configured");
+                }
             }
         }
 
@@ -541,6 +575,7 @@
         if (playerJsonData.birthBookCompleted) {
             document.getElementById("newPlayerMessage").classList.add("hidden");
             if (!playerJsonData.characterName) {
+                uiName.textContent = "Unborn";
                 uiName.classList.add("hidden");
                 editNameContainer.classList.remove("hidden");
             } else {
@@ -549,6 +584,9 @@
                 editNameContainer.classList.add("hidden");
             }
         } else {
+            uiName.textContent = "Unborn";
+            uiName.classList.remove("hidden");
+            editNameContainer.classList.add("hidden");
             document.getElementById("newPlayerMessage").classList.remove("hidden");
         }
         
