@@ -533,6 +533,12 @@
         });
         const data = await res.json();
         
+        // Prevent accidental file overwrite if API token expires or fails
+        if (data.error) {
+            console.error("Drive API Error:", data.error);
+            throw new Error(data.error.message); 
+        }
+        
         if (data.files && data.files.length > 0) {
             dataFileId = data.files[0].id;
             const fileRes = await fetch(`https://www.googleapis.com/drive/v3/files/${dataFileId}?alt=media`, {
@@ -558,36 +564,41 @@
     }
 
     async function saveDriveAppData() {
-        const metadata = {
-            name: 'character_data.json',
-            mimeType: 'application/json'
-        };
-        
-        // ONLY assign parents if creating a new file. PATCH requests fail if parents is included.
-        if (!dataFileId) {
-            metadata.parents = ['appDataFolder'];
-        }
-        
-        const fileContent = JSON.stringify(playerJsonData);
-        const form = new FormData();
-        form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-        form.append('file', new Blob([fileContent], { type: 'application/json' }));
+        if (dataFileId) {
+            // UPDATE EXISTING FILE: Direct media upload prevents metadata/parent folder conflicts
+            const url = `https://www.googleapis.com/upload/drive/v3/files/${dataFileId}?uploadType=media`;
+            const res = await fetch(url, {
+                method: 'PATCH',
+                headers: { 
+                    'Authorization': `Bearer ${gDriveToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(playerJsonData)
+            });
+            if (!res.ok) {
+                console.error("Failed to update save file on Google Drive.");
+            }
+        } else {
+            // CREATE NEW FILE: Requires multipart to set initial metadata and folder parent
+            const metadata = {
+                name: 'character_data.json',
+                parents: ['appDataFolder'],
+                mimeType: 'application/json'
+            };
+            const fileContent = JSON.stringify(playerJsonData);
+            const form = new FormData();
+            form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+            form.append('file', new Blob([fileContent], { type: 'application/json' }));
 
-        const url = dataFileId 
-            ? `https://www.googleapis.com/upload/drive/v3/files/${dataFileId}?uploadType=multipart`
-            : `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart`;
-            
-        const method = dataFileId ? 'PATCH' : 'POST';
-
-        const res = await fetch(url, {
-            method: method,
-            headers: { 'Authorization': `Bearer ${gDriveToken}` },
-            body: form
-        });
-        
-        const result = await res.json();
-        if (!dataFileId && result.id) {
-            dataFileId = result.id;
+            const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${gDriveToken}` },
+                body: form
+            });
+            const result = await res.json();
+            if (result.id) {
+                dataFileId = result.id;
+            }
         }
     }
 
