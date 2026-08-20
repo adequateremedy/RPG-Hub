@@ -2,68 +2,34 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Solus Dynasty RPG — Hub</title>
-
     <style>
         * {
             box-sizing: border-box;
         }
 
-        html,
-        body {
+        html, body {
             margin: 0;
             min-height: 100%;
             font-family: Georgia, "Times New Roman", serif;
-            background: #111;
+            background: #000000;
             color: #eee;
         }
 
         body {
             min-height: 100vh;
-        }
-
-        #app {
-            min-height: 100vh;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             padding: 30px;
         }
 
-        .panel {
+        #app {
             width: min(900px, 100%);
-            background: rgba(20, 20, 20, 0.96);
-            border: 1px solid #444;
-            border-radius: 14px;
-            padding: 40px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
-        }
-
-        h1,
-        h2 {
-            margin-top: 0;
-        }
-
-        h1 {
-            text-align: center;
-            font-size: 2.2rem;
-            letter-spacing: 0.08em;
-        }
-
-        h2 {
-            margin-top: 35px;
-            margin-bottom: 18px;
-        }
-
-        .subtitle {
-            text-align: center;
-            opacity: 0.75;
-            margin-bottom: 35px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
 
         .hidden {
@@ -90,1142 +56,578 @@
             cursor: wait;
         }
 
-        #loginScreen {
+        /* LOGIN / LOADING SCREENS */
+        #loginScreen, #loadingScreen {
             text-align: center;
+            background: rgba(20, 20, 20, 0.96);
+            border: 1px solid #444;
+            border-radius: 14px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+            margin-top: 50px;
         }
 
-        #googleSignInButton {
-            display: block;
-            margin: 25px auto 0;
-            min-width: 240px;
+        h1 {
+            font-size: 2.2rem;
+            letter-spacing: 0.08em;
+            margin-top: 0;
         }
 
-        #loadingScreen {
-            text-align: center;
+        .subtitle {
+            opacity: 0.75;
+            margin-bottom: 35px;
         }
 
-        #playerScreen {
+        #errorMessage {
+            color: #ffb0b0;
+            margin-top: 20px;
+            white-space: pre-line;
+        }
+
+        /* NAVIGATION TABS */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 10px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            border-radius: 0;
+            padding: 10px 15px;
+        }
+
+        .tab-btn.active {
+            border-bottom-color: #fff;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* HUB CONTENT SECTIONS */
+        .hub-section {
             display: none;
+        }
+        .hub-section.active {
+            display: block;
         }
 
         .player-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 20px;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #444;
+            margin-bottom: 20px;
         }
 
-        .player-info {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
+        /* CHARACTER CARD UI */
+        .card-container {
+            position: relative;
+            width: 600px;
+            height: 900px;
+            margin: 0 auto;
+            background-image: url('RPG-Hub/assets/images/ui/Blank-Character-Card-Steampunk-Era.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
         }
 
-        .player-name {
-            font-size: 1.4rem;
-        }
-
-        .player-email {
-            opacity: 0.7;
-            font-size: 0.9rem;
-        }
-
-        .welcome-message {
-            text-align: center;
-            margin: 25px 0 30px;
-            line-height: 1.6;
-        }
-
-        .stats-section {
-            margin-top: 20px;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(
-                auto-fit,
-                minmax(160px, 1fr)
-            );
-            gap: 15px;
-        }
-
-        .stat-card {
-            border: 1px solid #444;
-            border-radius: 10px;
-            padding: 18px;
-            background: #191919;
-        }
-
-        .stat-label {
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            opacity: 0.65;
-            margin-bottom: 7px;
-        }
-
-        .stat-value {
-            font-size: 1.2rem;
-        }
-
-        .actions-section {
-            margin-top: 35px;
-        }
-
-        .actions {
-            display: grid;
-            grid-template-columns: repeat(
-                auto-fit,
-                minmax(220px, 1fr)
-            );
-            gap: 15px;
-        }
-
-        .action-button {
-            min-height: 90px;
-            text-align: left;
-        }
-
-        .action-title {
-            display: block;
+        .abs-stat {
+            position: absolute;
+            font-size: 1.1rem;
             font-weight: bold;
-            margin-bottom: 6px;
+            color: #000; /* Assuming dark text on light parchment spaces, adjust if needed */
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.5);
         }
 
-        .action-description {
-            display: block;
-            font-size: 0.85rem;
-            opacity: 0.7;
+        .abs-stat.not-configured {
+            opacity: 0.5;
+            font-style: italic;
         }
 
-        #errorMessage {
+        /* Positions mapped to the card's visual layout */
+        #ui-name { top: 65px; left: 150px; width: 300px; text-align: center; font-size: 1.8rem; }
+        #ui-lvl { top: 140px; right: 65px; width: 60px; text-align: center; font-size: 1.5rem; }
+        #ui-exp { bottom: 35px; left: 270px; width: 60px; text-align: center; font-size: 1.2rem; }
+
+        .stat-group {
+            position: absolute;
+            top: 550px;
+            left: 60px;
+            right: 60px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            row-gap: 8px;
+            font-size: 1rem;
+            color: #000;
+        }
+
+        .stat-label { font-weight: bold; }
+        .stat-val { text-align: right; }
+
+        .power-section {
+            grid-column: 1 / -1;
+            margin-top: 15px;
             text-align: center;
-            color: #ffb0b0;
-            margin-top: 20px;
-            white-space: pre-line;
+            font-weight: bold;
         }
+
+        /* PORTRAIT OVERLAY */
+        #ui-portrait-container {
+            position: absolute;
+            top: 150px;
+            left: 120px;
+            width: 360px;
+            height: 360px;
+            border-radius: 50%;
+            overflow: hidden;
+            z-index: 0; 
+        }
+
+        #ui-portrait-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #222;
+        }
+
+        #ui-portrait-upload-btn {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.8rem;
+            padding: 5px 10px;
+            background: rgba(0,0,0,0.7);
+            border: 1px solid #fff;
+            color: #fff;
+            z-index: 2;
+        }
+
+        /* EDITABLE NAME INPUT */
+        #edit-name-container {
+            position: absolute;
+            top: 60px;
+            left: 150px;
+            width: 300px;
+            display: flex;
+            gap: 5px;
+            z-index: 2;
+        }
+        
+        #edit-name-input {
+            width: 100%;
+            padding: 5px;
+            font-family: inherit;
+        }
+
     </style>
 </head>
-
 <body>
 
 <div id="app">
 
-    <main class="panel">
+    <!-- LOGIN SCREEN -->
+    <section id="loginScreen">
+        <h1>Solus Dynasty RPG</h1>
+        <p class="subtitle">RPG Hub</p>
+        <p>Sign in with your Google account to securely save and access your RPG progress directly on your personal Google Drive.</p>
+        <button id="googleSignInButton" type="button">Sign in with Google</button>
+        <p id="errorMessage" class="hidden"></p>
+    </section>
 
-        <!-- ==================================================
-             LOGIN SCREEN
-             ================================================== -->
+    <!-- LOADING SCREEN -->
+    <section id="loadingScreen" class="hidden">
+        <p>Loading your RPG data from Google Drive...</p>
+    </section>
 
-        <section id="loginScreen">
+    <!-- PLAYER HUB -->
+    <section id="playerScreen" class="hidden">
 
-            <h1>Solus Dynasty RPG</h1>
+        <div class="player-header">
+            <div>
+                <strong id="headerPlayerName">Player</strong><br>
+                <small id="headerPlayerEmail" style="opacity:0.6;"></small>
+            </div>
+            <button id="signOutButton" type="button">Sign Out</button>
+        </div>
 
-            <p class="subtitle">
-                RPG Hub
-            </p>
+        <!-- TABS -->
+        <div class="tabs">
+            <button class="tab-btn active" data-target="tab-character">Character Card</button>
+            <button class="tab-btn" data-target="tab-inventory">Inventory</button>
+            <button class="tab-btn" data-target="tab-saved-images">Saved Images</button>
+        </div>
 
-            <p>
-                Sign in with your Google account to access
-                your RPG progress.
-            </p>
-
-            <button
-                id="googleSignInButton"
-                type="button"
-            >
-                Sign in with Google
-            </button>
-
-            <p
-                id="errorMessage"
-                class="hidden"
-            ></p>
-
-        </section>
-
-
-        <!-- ==================================================
-             LOADING SCREEN
-             ================================================== -->
-
-        <section
-            id="loadingScreen"
-            class="hidden"
-        >
-            <p>
-                Loading your RPG data...
-            </p>
-        </section>
-
-
-        <!-- ==================================================
-             PLAYER HUB
-             ================================================== -->
-
-        <section id="playerScreen">
-
-            <!-- PLAYER LOGIN INFORMATION -->
-
-            <div class="player-header">
-
-                <div class="player-info">
-
-                    <div
-                        id="playerName"
-                        class="player-name"
-                    ></div>
-
-                    <div
-                        id="playerEmail"
-                        class="player-email"
-                    ></div>
-
-                </div>
-
-                <button
-                    id="signOutButton"
-                    type="button"
-                >
-                    Sign Out
-                </button>
-
+        <!-- CHARACTER CARD TAB -->
+        <div id="tab-character" class="hub-section active">
+            
+            <div id="newPlayerMessage" class="hidden" style="text-align: center; margin: 20px 0;">
+                <p><strong>You have not established a Star in the Solus Dynasty Universe yet.</strong></p>
+                <button onclick="window.location.href='https://adequateremedy.github.io/BirthBook/'">Begin Birth Book</button>
             </div>
 
-
-            <!-- ==================================================
-                 NEW PLAYER MESSAGE
-                 ================================================== -->
-
-            <div
-                id="newPlayerMessage"
-                class="welcome-message"
-            >
-                <p>
-                    <strong>
-                        You have not established a Star in the
-                        Solus Dynasty Universe yet.
-                    </strong>
-                </p>
-
-                <p>
-                    You must begin with the Birth Book.
-                </p>
-            </div>
-
-
-            <!-- ==================================================
-                 CHARACTER STATS
-                 ALWAYS VISIBLE
-                 ================================================== -->
-
-            <section class="stats-section">
-
-                <h2>Character Stats</h2>
-
-                <div class="stats">
-
-                    <!-- NAME -->
-
-                    <div class="stat-card">
-
-                        <div class="stat-label">
-                            Name
-                        </div>
-
-                        <div
-                            id="nameValue"
-                            class="stat-value"
-                        >
-                            Not Established
-                        </div>
-
-                    </div>
-
-
-                    <!-- COURT -->
-
-                    <div class="stat-card">
-
-                        <div class="stat-label">
-                            Court
-                        </div>
-
-                        <div
-                            id="courtValue"
-                            class="stat-value"
-                        >
-                            Not Established
-                        </div>
-
-                    </div>
-
-
-                    <!-- ESSENCE -->
-
-                    <div class="stat-card">
-
-                        <div class="stat-label">
-                            Essence
-                        </div>
-
-                        <div
-                            id="essenceValue"
-                            class="stat-value"
-                        >
-                            Not Established
-                        </div>
-
-                    </div>
-
-
-                    <!-- EXP -->
-
-                    <div class="stat-card">
-
-                        <div class="stat-label">
-                            EXP
-                        </div>
-
-                        <div
-                            id="expValue"
-                            class="stat-value"
-                        >
-                            0
-                        </div>
-
-                    </div>
-
-
-                    <!-- LEVEL -->
-
-                    <div class="stat-card">
-
-                        <div class="stat-label">
-                            Lvl
-                        </div>
-
-                        <div
-                            id="levelValue"
-                            class="stat-value"
-                        >
-                            1
-                        </div>
-
-                    </div>
-
+            <div class="card-container">
+                <!-- Portrait -->
+                <div id="ui-portrait-container">
+                    <img id="ui-portrait-img" src="" alt="">
+                    <button id="ui-portrait-upload-btn">Upload Image</button>
+                    <input type="file" id="portrait-file-input" accept="image/*" class="hidden">
                 </div>
 
-            </section>
+                <!-- Absolutely Positioned Elements -->
+                <div id="ui-name" class="abs-stat">Not Yet Configured</div>
+                
+                <div id="edit-name-container" class="hidden">
+                    <input type="text" id="edit-name-input" placeholder="Enter Character Name">
+                    <button id="save-name-btn" type="button">Save</button>
+                </div>
 
+                <div id="ui-lvl" class="abs-stat">1</div>
+                <div id="ui-exp" class="abs-stat">0</div>
 
-            <!-- ==================================================
-                 AVAILABLE ACTIONS
-                 ================================================== -->
+                <div class="stat-group">
+                    <div class="stat-label">Bloodline Court:</div>
+                    <div class="stat-val abs-stat-text" id="ui-bloodline">Not Yet Configured</div>
 
-            <section class="actions-section">
+                    <div class="stat-label">Birth Court:</div>
+                    <div class="stat-val abs-stat-text" id="ui-birthcourt">Not Yet Configured</div>
 
-                <h2>Available</h2>
+                    <div class="stat-label">Essence Type:</div>
+                    <div class="stat-val abs-stat-text" id="ui-essence">Not Yet Configured</div>
 
-                <div
-                    id="actionsContainer"
-                    class="actions"
-                ></div>
+                    <div class="stat-label">Trigger:</div>
+                    <div class="stat-val abs-stat-text" id="ui-trigger">Not Yet Configured</div>
 
-            </section>
+                    <div class="power-section">Magic Power</div>
 
-        </section>
+                    <div class="stat-label">Offensive: <span id="ui-off-name" style="font-weight:normal;">Not Yet Configured</span></div>
+                    <div class="stat-val">DMG: <span id="ui-off-dmg">Not Yet Configured</span></div>
 
-    </main>
+                    <div class="stat-label">Defensive: <span id="ui-def-name" style="font-weight:normal;">Not Yet Configured</span></div>
+                    <div class="stat-val">HP: <span id="ui-def-hp">Not Yet Configured</span></div>
+                </div>
+            </div>
+
+            <div id="actionsContainer" style="margin-top:20px; display:flex; gap:10px; justify-content:center;"></div>
+        </div>
+
+        <!-- INVENTORY TAB -->
+        <div id="tab-inventory" class="hub-section">
+            <h2 style="text-align:center; margin-top:40px;">Inventory</h2>
+            <p style="text-align:center; opacity:0.7;">Inventory features coming soon.</p>
+        </div>
+
+        <!-- SAVED IMAGES TAB -->
+        <div id="tab-saved-images" class="hub-section">
+            <h2 style="text-align:center; margin-top:40px;">Saved Images</h2>
+            <p style="text-align:center; opacity:0.7;">Image gallery coming soon.</p>
+        </div>
+
+    </section>
 
 </div>
 
-
 <script type="module">
-
-    /*
-    ============================================================
-    FIREBASE IMPORTS
-    ============================================================
-    */
-
-    import {
-        initializeApp
-    } from
-    "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
-
-    import {
-        getAuth,
-        GoogleAuthProvider,
-        signInWithPopup,
-        onAuthStateChanged,
-        signOut
-    } from
-    "https://www.gstatic.com/firebasejs/12.17.0/firebase-auth.js";
-
-    import {
-        getFirestore,
-        doc,
-        getDoc,
-        setDoc,
-        serverTimestamp
-    } from
-    "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
-
-
-    /*
-    ============================================================
-    FIREBASE CONFIGURATION
-    ============================================================
-    */
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
+    import { 
+        getAuth, GoogleAuthProvider, signInWithPopup, signOut 
+    } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-auth.js";
 
     const firebaseConfig = {
-
-        apiKey:
-            "AIzaSyAeyOzh9YHaQDMSvn-8-ZyVqXkwY_diL5Y",
-
-        authDomain:
-            "solus-dynasty-rpg.firebaseapp.com",
-
-        projectId:
-            "solus-dynasty-rpg",
-
-        storageBucket:
-            "solus-dynasty-rpg.firebasestorage.app",
-
-        messagingSenderId:
-            "136636530132",
-
-        appId:
-            "1:136636530132:web:6c77757f59f365be0c6a41",
-
-        measurementId:
-            "G-S6PXC09F52"
+        apiKey: "AIzaSyAeyOzh9YHaQDMSvn-8-ZyVqXkwY_diL5Y",
+        authDomain: "solus-dynasty-rpg.firebaseapp.com",
+        projectId: "solus-dynasty-rpg",
+        storageBucket: "solus-dynasty-rpg.firebasestorage.app",
+        messagingSenderId: "136636530132",
+        appId: "1:136636530132:web:6c77757f59f365be0c6a41",
+        measurementId: "G-S6PXC09F52"
     };
 
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+    // Request permission to store data in the user's hidden appDataFolder in Google Drive
+    provider.addScope('https://www.googleapis.com/auth/drive.appdata');
+    provider.setCustomParameters({ prompt: 'consent' });
 
-    /*
-    ============================================================
-    INITIALIZE FIREBASE
-    ============================================================
-    */
+    // Global state
+    let gDriveToken = null;
+    let dataFileId = null;
+    let playerJsonData = {};
 
-    const firebaseApp =
-        initializeApp(firebaseConfig);
+    // DOM Elements
+    const loginScreen = document.getElementById("loginScreen");
+    const loadingScreen = document.getElementById("loadingScreen");
+    const playerScreen = document.getElementById("playerScreen");
+    const errorMsg = document.getElementById("errorMessage");
+    
+    // UI Elements
+    const uiName = document.getElementById("ui-name");
+    const editNameContainer = document.getElementById("edit-name-container");
+    const editNameInput = document.getElementById("edit-name-input");
+    const saveNameBtn = document.getElementById("save-name-btn");
+    
+    const elementsToUpdate = {
+        "ui-lvl": "level",
+        "ui-exp": "exp",
+        "ui-bloodline": "bloodlineCourt",
+        "ui-birthcourt": "birthCourt",
+        "ui-essence": "essenceType",
+        "ui-trigger": "trigger",
+        "ui-off-name": "offensiveMagicName",
+        "ui-off-dmg": "offensiveMagicDmg",
+        "ui-def-name": "defensiveMagicName",
+        "ui-def-hp": "defensiveMagicHp"
+    };
 
-    const auth =
-        getAuth(firebaseApp);
+    // Tabs logic
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.hub-section').forEach(s => s.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(btn.dataset.target).classList.add('active');
+        });
+    });
 
-    const db =
-        getFirestore(firebaseApp);
-
-    const googleProvider =
-        new GoogleAuthProvider();
-
-
-    /*
-    ============================================================
-    DOM ELEMENTS
-    ============================================================
-    */
-
-    const loginScreen =
-        document.getElementById("loginScreen");
-
-    const loadingScreen =
-        document.getElementById("loadingScreen");
-
-    const playerScreen =
-        document.getElementById("playerScreen");
-
-    const googleSignInButton =
-        document.getElementById(
-            "googleSignInButton"
-        );
-
-    const signOutButton =
-        document.getElementById(
-            "signOutButton"
-        );
-
-    const playerName =
-        document.getElementById(
-            "playerName"
-        );
-
-    const playerEmail =
-        document.getElementById(
-            "playerEmail"
-        );
-
-    const newPlayerMessage =
-        document.getElementById(
-            "newPlayerMessage"
-        );
-
-    const nameValue =
-        document.getElementById(
-            "nameValue"
-        );
-
-    const courtValue =
-        document.getElementById(
-            "courtValue"
-        );
-
-    const essenceValue =
-        document.getElementById(
-            "essenceValue"
-        );
-
-    const expValue =
-        document.getElementById(
-            "expValue"
-        );
-
-    const levelValue =
-        document.getElementById(
-            "levelValue"
-        );
-
-    const actionsContainer =
-        document.getElementById(
-            "actionsContainer"
-        );
-
-    const errorMessage =
-        document.getElementById(
-            "errorMessage"
-        );
-
-
-    /*
-    ============================================================
-    ERROR DISPLAY
-    ============================================================
-    */
-
-    function showError(message) {
-
-        errorMessage.textContent =
-            message;
-
-        errorMessage.classList.remove(
-            "hidden"
-        );
+    function showError(msg) {
+        errorMsg.textContent = msg;
+        errorMsg.classList.remove("hidden");
+        loadingScreen.classList.add("hidden");
+        loginScreen.classList.remove("hidden");
     }
 
-
-    /*
-    ============================================================
-    CLEAR ERROR
-    ============================================================
-    */
-
-    function clearError() {
-
-        errorMessage.textContent = "";
-
-        errorMessage.classList.add(
-            "hidden"
-        );
-    }
-
-
-    /*
-    ============================================================
-    SHOW LOGIN
-    ============================================================
-    */
-
-    function showLogin() {
-
-        loginScreen.style.display =
-            "block";
-
-        loadingScreen.classList.add(
-            "hidden"
-        );
-
-        playerScreen.style.display =
-            "none";
-    }
-
-
-    /*
-    ============================================================
-    SHOW LOADING
-    ============================================================
-    */
-
-    function showLoading() {
-
-        loginScreen.style.display =
-            "none";
-
-        loadingScreen.classList.remove(
-            "hidden"
-        );
-
-        playerScreen.style.display =
-            "none";
-    }
-
-
-    /*
-    ============================================================
-    SHOW PLAYER HUB
-    ============================================================
-    */
-
-    function showPlayerHub() {
-
-        loginScreen.style.display =
-            "none";
-
-        loadingScreen.classList.add(
-            "hidden"
-        );
-
-        playerScreen.style.display =
-            "block";
-    }
-
-
-    /*
-    ============================================================
-    CREATE / LOAD PLAYER RECORD
-    ============================================================
-    */
-
-    async function getOrCreatePlayer(user) {
-
-        const playerRef =
-            doc(
-                db,
-                "players",
-                user.uid
-            );
-
-        const snapshot =
-            await getDoc(playerRef);
-
-
-        /*
-        --------------------------------------------------------
-        NEW GOOGLE ACCOUNT
-        --------------------------------------------------------
-        */
-
-        if (!snapshot.exists()) {
-
-            const newPlayer = {
-
-                googleUid:
-                    user.uid,
-
-                email:
-                    user.email || "",
-
-                displayName:
-                    user.displayName || "",
-
-                photoURL:
-                    user.photoURL || "",
-
-                createdAt:
-                    serverTimestamp(),
-
-                updatedAt:
-                    serverTimestamp()
-            };
-
-            await setDoc(
-                playerRef,
-                newPlayer
-            );
-
-            return newPlayer;
-        }
-
-
-        /*
-        --------------------------------------------------------
-        EXISTING GOOGLE ACCOUNT
-        --------------------------------------------------------
-        */
-
-        return snapshot.data();
-    }
-
-
-    /*
-    ============================================================
-    UPDATE CHARACTER STATS
-    ============================================================
-    */
-
-    function updateStats(playerData) {
-
-        /*
-        --------------------------------------------------------
-        NAME
-        --------------------------------------------------------
-        */
-
-        nameValue.textContent =
-            playerData.characterName ||
-            "Not Established";
-
-
-        /*
-        --------------------------------------------------------
-        COURT
-        --------------------------------------------------------
-        */
-
-        courtValue.textContent =
-            playerData.court ||
-            "Not Established";
-
-
-        /*
-        --------------------------------------------------------
-        ESSENCE
-        --------------------------------------------------------
-        */
-
-        essenceValue.textContent =
-            playerData.essenceType ||
-            "Not Established";
-
-
-        /*
-        --------------------------------------------------------
-        EXP
-        --------------------------------------------------------
-        */
-
-        expValue.textContent =
-            playerData.exp !== undefined
-                ? String(playerData.exp)
-                : "0";
-
-
-        /*
-        --------------------------------------------------------
-        LEVEL
-        --------------------------------------------------------
-        */
-
-        levelValue.textContent =
-            playerData.level !== undefined
-                ? String(playerData.level)
-                : "1";
-    }
-
-
-    /*
-    ============================================================
-    CLEAR AVAILABLE ACTIONS
-    ============================================================
-    */
-
-    function clearActions() {
-
-        actionsContainer.innerHTML = "";
-    }
-
-
-    /*
-    ============================================================
-    ADD AVAILABLE ACTION
-    ============================================================
-    */
-
-    function addAction(
-        title,
-        description,
-        action
-    ) {
-
-        const button =
-            document.createElement(
-                "button"
-            );
-
-        button.type =
-            "button";
-
-        button.className =
-            "action-button";
-
-        const titleElement =
-            document.createElement(
-                "span"
-            );
-
-        titleElement.className =
-            "action-title";
-
-        titleElement.textContent =
-            title;
-
-        const descriptionElement =
-            document.createElement(
-                "span"
-            );
-
-        descriptionElement.className =
-            "action-description";
-
-        descriptionElement.textContent =
-            description;
-
-        button.appendChild(
-            titleElement
-        );
-
-        button.appendChild(
-            descriptionElement
-        );
-
-        button.addEventListener(
-            "click",
-            action
-        );
-
-        actionsContainer.appendChild(
-            button
-        );
-    }
-
-
-    /*
-    ============================================================
-    BUILD AVAILABLE MENU
-    ============================================================
-    */
-
-    function buildAvailableMenu(playerData) {
-
-        clearActions();
-
-
-        /*
-        --------------------------------------------------------
-        NO BIRTH BOOK COMPLETED
-        --------------------------------------------------------
-        */
-
-        const birthBookCompleted =
-            playerData.birthBookCompleted === true;
-
-
-        if (!birthBookCompleted) {
-
-            addAction(
-                "Birth Book",
-                "Begin the first step of your character's journey.",
-                () => {
-
-                    window.location.href =
-                        "https://adequateremedy.github.io/BirthBook/";
-                }
-            );
-
-            return;
-        }
-
-
-        /*
-        --------------------------------------------------------
-        BIRTH BOOK COMPLETE
-        --------------------------------------------------------
-        Additional activities will only appear after their
-        actual unlock conditions have been saved.
-        --------------------------------------------------------
-        */
-
-        if (
-            playerData.comingOfAgeUnlocked === true &&
-            playerData.comingOfAgeCompleted !== true
-        ) {
-
-            addAction(
-                "Coming of Age",
-                "Discover the character's Essence.",
-                () => {
-
-                    alert(
-                        "Coming of Age is unlocked."
-                    );
-                }
-            );
-        }
-
-
-        if (
-            playerData.echoesUnlocked === true
-        ) {
-
-            addAction(
-                "Echoes",
-                "Daily-life activities available to this character.",
-                () => {
-
-                    alert(
-                        "Echoes is unlocked."
-                    );
-                }
-            );
-        }
-
-
-        if (
-            playerData.experiencesUnlocked === true
-        ) {
-
-            addAction(
-                "Experiences",
-                "Character experiences available to this character.",
-                () => {
-
-                    alert(
-                        "Experiences is unlocked."
-                    );
-                }
-            );
-        }
-
-    }
-
-
-    /*
-    ============================================================
-    BUILD PLAYER HUB
-    ============================================================
-    */
-
-    function buildHub(
-        user,
-        playerData
-    ) {
-
-        /*
-        --------------------------------------------------------
-        PLAYER IDENTITY
-        --------------------------------------------------------
-        */
-
-        playerName.textContent =
-            user.displayName ||
-            playerData.displayName ||
-            "Player";
-
-        playerEmail.textContent =
-            user.email ||
-            playerData.email ||
-            "";
-
-
-        /*
-        --------------------------------------------------------
-        CHARACTER STATS
-        --------------------------------------------------------
-        */
-
-        updateStats(
-            playerData
-        );
-
-
-        /*
-        --------------------------------------------------------
-        NEW STAR MESSAGE
-        --------------------------------------------------------
-        */
-
-        if (
-            playerData.birthBookCompleted !== true
-        ) {
-
-            newPlayerMessage.classList.remove(
-                "hidden"
-            );
-
+    // --- GOOGLE DRIVE API FUNCTIONS ---
+
+    async function getDriveAppData() {
+        // Find character_data.json
+        const res = await fetch("https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='character_data.json'", {
+            headers: { 'Authorization': `Bearer ${gDriveToken}` }
+        });
+        const data = await res.json();
+        
+        if (data.files && data.files.length > 0) {
+            dataFileId = data.files[0].id;
+            // Fetch content
+            const fileRes = await fetch(`https://www.googleapis.com/drive/v3/files/${dataFileId}?alt=media`, {
+                headers: { 'Authorization': `Bearer ${gDriveToken}` }
+            });
+            playerJsonData = await fileRes.json();
         } else {
-
-            newPlayerMessage.classList.add(
-                "hidden"
-            );
+            // Create new file
+            playerJsonData = {
+                birthBookCompleted: false,
+                comingOfAgeUnlocked: false,
+                comingOfAgeCompleted: false,
+                traumaUnlocked: false,
+                traumaCompleted: false,
+                escapeUnlocked: false,
+                escapeCompleted: false,
+                exp: 0,
+                level: 1,
+                portraitId: ""
+            };
+            await saveDriveAppData();
         }
-
-
-        /*
-        --------------------------------------------------------
-        AVAILABLE ACTIONS
-        --------------------------------------------------------
-        */
-
-        buildAvailableMenu(
-            playerData
-        );
     }
 
+    async function saveDriveAppData() {
+        const metadata = {
+            name: 'character_data.json',
+            parents: ['appDataFolder'],
+            mimeType: 'application/json'
+        };
+        
+        const fileContent = JSON.stringify(playerJsonData);
+        const form = new FormData();
+        form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+        form.append('file', new Blob([fileContent], { type: 'application/json' }));
 
-    /*
-    ============================================================
-    GOOGLE SIGN-IN
-    ============================================================
-    */
+        const url = dataFileId 
+            ? `https://www.googleapis.com/upload/drive/v3/files/${dataFileId}?uploadType=multipart`
+            : `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart`;
+            
+        const method = dataFileId ? 'PATCH' : 'POST';
 
-    googleSignInButton.addEventListener(
-        "click",
-        async () => {
+        const res = await fetch(url, {
+            method: method,
+            headers: { 'Authorization': `Bearer ${gDriveToken}` },
+            body: form
+        });
+        
+        const result = await res.json();
+        if (!dataFileId && result.id) {
+            dataFileId = result.id;
+        }
+    }
 
-            clearError();
+    async function uploadImageToDrive(file) {
+        const metadata = {
+            name: file.name,
+            parents: ['appDataFolder']
+        };
+        const form = new FormData();
+        form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+        form.append('file', file);
 
-            googleSignInButton.disabled =
-                true;
+        const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${gDriveToken}` },
+            body: form
+        });
+        const result = await res.json();
+        return result.id;
+    }
 
-            googleSignInButton.textContent =
-                "Signing in...";
+    async function getImageUrl(fileId) {
+        const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+            headers: { 'Authorization': `Bearer ${gDriveToken}` }
+        });
+        const blob = await res.blob();
+        return URL.createObjectURL(blob);
+    }
 
-            try {
+    // --- UI LOGIC ---
 
-                await signInWithPopup(
-                    auth,
-                    googleProvider
-                );
+    function calculateLevel() {
+        let lvl = 1; // Birth Book phase
+        if (playerJsonData.comingOfAgeCompleted) lvl = 2;
+        if (playerJsonData.traumaCompleted) lvl = 3;
+        if (playerJsonData.escapeCompleted) lvl = 4;
+        playerJsonData.level = lvl;
+    }
 
-            } catch (error) {
+    function calculateBloodlineCourt() {
+        if (!playerJsonData.birthCourt) return;
+        if (playerJsonData.birthCourt === "Shadow" && !playerJsonData.bloodlineCourt) {
+            const options = ["Seelie", "UnSeelie", "Shadow"];
+            playerJsonData.bloodlineCourt = options[Math.floor(Math.random() * options.length)];
+        } else if (!playerJsonData.bloodlineCourt) {
+            playerJsonData.bloodlineCourt = playerJsonData.birthCourt; 
+        }
+    }
 
-                console.error(
-                    "Google sign-in error:",
-                    error
-                );
+    async function buildHubUI(user) {
+        document.getElementById("headerPlayerName").textContent = user.displayName;
+        document.getElementById("headerPlayerEmail").textContent = user.email;
 
-                let message =
-                    "Google sign-in could not be completed.";
+        calculateLevel();
+        calculateBloodlineCourt();
 
-                if (
-                    error &&
-                    error.code
-                ) {
-
-                    message +=
-                        `\n\nFirebase error: ${error.code}`;
-                }
-
-                showError(
-                    message
-                );
-
-                googleSignInButton.disabled =
-                    false;
-
-                googleSignInButton.textContent =
-                    "Sign in with Google";
+        // Update Text Stats
+        for (const [elementId, dataKey] of Object.entries(elementsToUpdate)) {
+            const el = document.getElementById(elementId);
+            const val = playerJsonData[dataKey];
+            if (val !== undefined && val !== "" && val !== null) {
+                el.textContent = val;
+                el.classList.remove("not-configured");
+            } else {
+                el.textContent = elementId === "ui-exp" ? "0" : (elementId === "ui-lvl" ? "1" : "Not Yet Configured");
+                if(elementId !== "ui-exp" && elementId !== "ui-lvl") el.classList.add("not-configured");
             }
         }
-    );
 
-
-    /*
-    ============================================================
-    AUTHENTICATION STATE
-    ============================================================
-    */
-
-    onAuthStateChanged(
-        auth,
-        async (user) => {
-
-            if (!user) {
-
-                googleSignInButton.disabled =
-                    false;
-
-                googleSignInButton.textContent =
-                    "Sign in with Google";
-
-                showLogin();
-
-                return;
-            }
-
-
-            try {
-
-                clearError();
-
-                showLoading();
-
-                const playerData =
-                    await getOrCreatePlayer(
-                        user
-                    );
-
-                buildHub(
-                    user,
-                    playerData
-                );
-
-                showPlayerHub();
-
-            } catch (error) {
-
-                console.error(
-                    "RPG Hub loading error:",
-                    error
-                );
-
-                showError(
-                    "Your RPG data could not be loaded."
-                );
-
-                showLogin();
-            }
+        // Portrait
+        if (playerJsonData.portraitId) {
+            const imgUrl = await getImageUrl(playerJsonData.portraitId);
+            document.getElementById("ui-portrait-img").src = imgUrl;
         }
-    );
 
-
-    /*
-    ============================================================
-    SIGN OUT
-    ============================================================
-    */
-
-    signOutButton.addEventListener(
-        "click",
-        async () => {
-
-            clearError();
-
-            try {
-
-                await signOut(
-                    auth
-                );
-
-            } catch (error) {
-
-                console.error(
-                    "Sign-out error:",
-                    error
-                );
-
-                showError(
-                    "Unable to sign out."
-                );
+        // Name Logic
+        if (playerJsonData.birthBookCompleted) {
+            document.getElementById("newPlayerMessage").classList.add("hidden");
+            if (!playerJsonData.characterName) {
+                uiName.classList.add("hidden");
+                editNameContainer.classList.remove("hidden");
+            } else {
+                uiName.textContent = playerJsonData.characterName;
+                uiName.classList.remove("hidden");
+                editNameContainer.classList.add("hidden");
             }
+        } else {
+            document.getElementById("newPlayerMessage").classList.remove("hidden");
         }
-    );
+        
+        // Actions mapping
+        const actionsContainer = document.getElementById("actionsContainer");
+        actionsContainer.innerHTML = "";
+        
+        if (playerJsonData.comingOfAgeUnlocked && !playerJsonData.comingOfAgeCompleted) {
+            actionsContainer.innerHTML += `<button onclick="alert('Coming of Age is unlocked.')">Coming of Age</button>`;
+        }
+        if (playerJsonData.traumaUnlocked && !playerJsonData.traumaCompleted) {
+            actionsContainer.innerHTML += `<button onclick="alert('Trauma Trial unlocked.')">Trauma Trial</button>`;
+        }
+    }
 
+    // --- EVENT LISTENERS ---
+
+    document.getElementById("googleSignInButton").addEventListener("click", async () => {
+        loginScreen.classList.add("hidden");
+        loadingScreen.classList.remove("hidden");
+
+        try {
+            const result = await signInWithPopup(auth, provider);
+            const credential = GoogleAuthProvider.credentialFromResult(result);
+            gDriveToken = credential.accessToken;
+            
+            await getDriveAppData();
+            await buildHubUI(result.user);
+            
+            loadingScreen.classList.add("hidden");
+            playerScreen.classList.remove("hidden");
+        } catch (error) {
+            console.error(error);
+            showError("Sign-in or Drive connection failed.\n" + error.message);
+        }
+    });
+
+    document.getElementById("signOutButton").addEventListener("click", async () => {
+        await signOut(auth);
+        gDriveToken = null;
+        playerScreen.classList.add("hidden");
+        loginScreen.classList.remove("hidden");
+    });
+
+    // Name Save
+    saveNameBtn.addEventListener("click", async () => {
+        const val = editNameInput.value.trim();
+        if (val) {
+            playerJsonData.characterName = val;
+            uiName.textContent = val;
+            uiName.classList.remove("hidden");
+            editNameContainer.classList.add("hidden");
+            await saveDriveAppData();
+        }
+    });
+
+    // Image Upload
+    const uploadBtn = document.getElementById("ui-portrait-upload-btn");
+    const fileInput = document.getElementById("portrait-file-input");
+
+    uploadBtn.addEventListener("click", () => fileInput.click());
+
+    fileInput.addEventListener("change", async (e) => {
+        if (e.target.files && e.target.files[0]) {
+            uploadBtn.textContent = "Uploading...";
+            uploadBtn.disabled = true;
+            try {
+                const file = e.target.files[0];
+                const fileId = await uploadImageToDrive(file);
+                playerJsonData.portraitId = fileId;
+                await saveDriveAppData();
+                
+                const imgUrl = URL.createObjectURL(file);
+                document.getElementById("ui-portrait-img").src = imgUrl;
+            } catch (err) {
+                console.error("Image upload failed", err);
+                alert("Failed to upload image to Drive.");
+            }
+            uploadBtn.textContent = "Upload Image";
+            uploadBtn.disabled = false;
+        }
+    });
 </script>
 
 </body>
