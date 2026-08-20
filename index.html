@@ -367,7 +367,6 @@
             <button class="tab-btn" data-target="tab-saved-images">Saved Images</button>
         </div>
 
-
         <!-- CHARACTER CARD TAB -->
         <div id="tab-character" class="hub-section active">
             
@@ -628,21 +627,10 @@
         playerJsonData.level = lvl;
     }
 
-    function calculateBloodlineCourt() {
-        if (!playerJsonData.birthCourt) return;
-        if (playerJsonData.birthCourt === "Shadow" && !playerJsonData.bloodlineCourt) {
-            const options = ["Seelie", "UnSeelie", "Shadow"];
-            playerJsonData.bloodlineCourt = options[Math.floor(Math.random() * options.length)];
-        } else if (!playerJsonData.bloodlineCourt) {
-            playerJsonData.bloodlineCourt = playerJsonData.birthCourt; 
-        }
-    }
-
     async function buildHubUI(user) {
         document.getElementById("headerPlayerEmail").textContent = user.email;
 
         calculateLevel();
-        calculateBloodlineCourt();
 
         // Update Nav Tabs Data
         starNameDisplay.textContent = playerJsonData.starName || "Star 1";
@@ -716,6 +704,23 @@
             gDriveToken = credential.accessToken;
             
             await getDriveAppData();
+
+            // --- URL PARAMETER CHECK ---
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlBirthCourt = urlParams.get('birthCourt');
+            const urlBloodlineCourt = urlParams.get('bloodlineCourt');
+
+            if (urlBirthCourt && urlBloodlineCourt) {
+                playerJsonData.birthCourt = urlBirthCourt;
+                playerJsonData.bloodlineCourt = urlBloodlineCourt;
+                playerJsonData.birthBookCompleted = true;
+                
+                await saveDriveAppData();
+                
+                // Clean URL to prevent re-triggering on refresh
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+
             await buildHubUI(result.user);
             
             loadingScreen.classList.add("hidden");
