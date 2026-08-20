@@ -84,12 +84,23 @@
             white-space: pre-line;
         }
 
-        /* NAVIGATION TABS */
+        /* NAVIGATION TABS (3-TIER SYSTEM) */
         .tabs {
             display: flex;
             gap: 10px;
             border-bottom: 1px solid #444;
-            padding-bottom: 10px;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .tier-1 { border-bottom: 2px solid #7F522B; margin-bottom: 10px; padding-bottom: 5px; }
+        .tier-2 { font-size: 0.9rem; margin-bottom: 10px; }
+        .tier-3 { font-size: 0.85rem; justify-content: center; border-bottom: none; }
+
+        .tab-group {
+            display: flex;
+            align-items: center;
         }
 
         .tab-btn {
@@ -97,12 +108,31 @@
             border: none;
             border-bottom: 2px solid transparent;
             border-radius: 0;
-            padding: 10px 15px;
+            padding: 8px 12px;
+            color: #eee;
         }
 
         .tab-btn.active {
             border-bottom-color: #fff;
             background: rgba(255, 255, 255, 0.1);
+        }
+
+        .tab-btn.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: none;
+            color: #aaa;
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 0 8px;
+        }
+
+        .icon-btn:hover {
+            color: #fff;
         }
 
         /* HUB CONTENT SECTIONS */
@@ -117,7 +147,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
 
         /* CHARACTER CARD UI */
@@ -299,27 +329,48 @@
 
         <div class="player-header">
             <div>
-                <strong id="headerPlayerName">Player</strong><br>
-                <small id="headerPlayerEmail" style="opacity:0.6;"></small>
+                <span id="headerPlayerEmail" style="opacity:0.8; font-size: 1.1rem;"></span>
             </div>
             <button id="signOutButton" type="button">Sign Out</button>
         </div>
 
-        <!-- TABS -->
-        <div class="tabs">
+        <!-- TIER 1: STAR SELECTION -->
+        <div class="tabs tier-1">
+            <div class="tab-group">
+                <button class="tab-btn active" data-target="star-1">
+                    <span id="star-name-display">Star 1</span>
+                </button>
+                <button id="edit-star-name-btn" class="icon-btn" title="Rename Star">✎</button>
+            </div>
+        </div>
+
+        <div id="edit-star-container" class="hidden" style="margin-bottom: 20px; display:flex; gap:10px; max-width: 300px;">
+            <input type="text" id="edit-star-input" placeholder="Name your Star" style="padding:5px; flex:1; font-family: inherit;">
+            <button id="save-star-btn" type="button" style="padding:5px 15px;">Save</button>
+        </div>
+
+        <!-- TIER 2: GENERATION SELECTION -->
+        <div class="tabs tier-2">
+            <button class="tab-btn active" data-target="gen-1"><span id="gen-1-name">Gen 1 - Steampunk</span></button>
+            <button class="tab-btn disabled" disabled>Gen 2 - UnCourted</button>
+            <button class="tab-btn disabled" disabled>Gen 3 - Wynter</button>
+            <button class="tab-btn disabled" disabled>Gen 4 - Apocalypse</button>
+            <button class="tab-btn disabled" disabled>Gen 5 - Indigo</button>
+            <button class="tab-btn disabled" disabled>Star - Zenith</button>
+        </div>
+
+        <!-- TIER 3: SECTION SELECTION -->
+        <div class="tabs tier-3">
             <button class="tab-btn active" data-target="tab-character">Character Card</button>
+            <button class="tab-btn" data-target="tab-available">Available</button>
             <button class="tab-btn" data-target="tab-inventory">Inventory</button>
             <button class="tab-btn" data-target="tab-saved-images">Saved Images</button>
         </div>
 
+
         <!-- CHARACTER CARD TAB -->
         <div id="tab-character" class="hub-section active">
             
-            <div id="newPlayerMessage" class="hidden" style="text-align: center; margin: 20px 0;">
-                <p><strong>You have not established a Star in the Solus Dynasty Universe yet.</strong></p>
-                <button onclick="window.location.href='https://adequateremedy.github.io/BirthBook/'">Begin Birth Book</button>
-            </div>
-
             <div class="card-container">
                 <!-- Portrait -->
                 <div id="ui-portrait-container">
@@ -369,7 +420,18 @@
                 </div>
             </div>
 
-            <div id="actionsContainer" style="margin-top:20px; display:flex; gap:10px; justify-content:center;"></div>
+        </div>
+
+        <!-- AVAILABLE TAB -->
+        <div id="tab-available" class="hub-section">
+            <h2 style="text-align:center; margin-top:20px;">Available Actions</h2>
+            
+            <div id="newPlayerMessage" class="hidden" style="text-align: center; margin: 30px 0;">
+                <p><strong>You have not established a Star in the Solus Dynasty Universe yet.</strong></p>
+                <button onclick="window.location.href='https://adequateremedy.github.io/BirthBook/'" style="margin-top: 15px;">Begin Birth Book</button>
+            </div>
+
+            <div id="actionsContainer" style="margin-top:20px; display:flex; flex-direction:column; gap:15px; align-items:center;"></div>
         </div>
 
         <!-- INVENTORY TAB -->
@@ -428,6 +490,13 @@
     const editNameInput = document.getElementById("edit-name-input");
     const saveNameBtn = document.getElementById("save-name-btn");
     
+    const starNameDisplay = document.getElementById("star-name-display");
+    const gen1NameDisplay = document.getElementById("gen-1-name");
+    const editStarBtn = document.getElementById("edit-star-name-btn");
+    const editStarContainer = document.getElementById("edit-star-container");
+    const editStarInput = document.getElementById("edit-star-input");
+    const saveStarBtn = document.getElementById("save-star-btn");
+
     const elementsToUpdate = {
         "ui-lvl": "level",
         "ui-exp": "exp",
@@ -441,10 +510,10 @@
         "ui-def-hp": "defensiveMagicHp"
     };
 
-    // Tabs logic
-    document.querySelectorAll('.tab-btn').forEach(btn => {
+    // Tier 3 Tabs logic (Sections)
+    document.querySelectorAll('.tier-3 .tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tier-3 .tab-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.hub-section').forEach(s => s.classList.remove('active'));
             btn.classList.add('active');
             document.getElementById(btn.dataset.target).classList.add('active');
@@ -477,6 +546,7 @@
         } else {
             // Create new file
             playerJsonData = {
+                starName: "",
                 birthBookCompleted: false,
                 comingOfAgeUnlocked: false,
                 comingOfAgeCompleted: false,
@@ -569,11 +639,14 @@
     }
 
     async function buildHubUI(user) {
-        document.getElementById("headerPlayerName").textContent = user.displayName;
         document.getElementById("headerPlayerEmail").textContent = user.email;
 
         calculateLevel();
         calculateBloodlineCourt();
+
+        // Update Nav Tabs Data
+        starNameDisplay.textContent = playerJsonData.starName || "Star 1";
+        gen1NameDisplay.textContent = playerJsonData.characterName ? `${playerJsonData.characterName} - Steampunk` : "Gen 1 - Steampunk";
 
         // Update Text Stats
         for (const [elementId, dataKey] of Object.entries(elementsToUpdate)) {
@@ -660,7 +733,23 @@
         loginScreen.classList.remove("hidden");
     });
 
-    // Name Save
+    // Edit Star Name
+    editStarBtn.addEventListener("click", () => {
+        editStarContainer.classList.toggle("hidden");
+        editStarInput.value = playerJsonData.starName || "";
+    });
+
+    saveStarBtn.addEventListener("click", async () => {
+        const val = editStarInput.value.trim();
+        if (val) {
+            playerJsonData.starName = val;
+            starNameDisplay.textContent = val;
+            editStarContainer.classList.add("hidden");
+            await saveDriveAppData();
+        }
+    });
+
+    // Character Name Save
     saveNameBtn.addEventListener("click", async () => {
         const val = editNameInput.value.trim();
         if (val) {
@@ -668,6 +757,7 @@
             uiName.textContent = val;
             uiName.classList.remove("hidden");
             editNameContainer.classList.add("hidden");
+            gen1NameDisplay.textContent = `${val} - Steampunk`;
             await saveDriveAppData();
         }
     });
