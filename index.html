@@ -125,7 +125,7 @@
             position: relative;
             width: 600px;
             height: 900px;
-            margin: 0 auto -225px auto; /* Adjusts bottom margin for the 0.75 scale */
+            margin: 0 auto -225px auto;
             background-image: url('assets/images/ui/Blank-Character-Card-Steampunk-Era.png');
             background-size: cover;
             background-position: center;
@@ -152,8 +152,8 @@
         
         #ui-lvl-container {
             position: absolute;
-            top: 125px;
-            right: 55px;
+            top: 110px;
+            right: 48px;
             width: 80px;
             height: 80px;
             display: flex;
@@ -163,6 +163,7 @@
             color: #7F522B;
             text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
             font-weight: bold;
+            z-index: 2;
         }
         .lvl-label {
             font-size: 1.1rem;
@@ -174,7 +175,30 @@
             margin-top: 2px;
         }
 
-        #ui-exp { bottom: 35px; left: 270px; width: 60px; text-align: center; font-size: 1.2rem; }
+        #ui-exp-container {
+            position: absolute;
+            bottom: 12px;
+            left: 260px;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #7F522B;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+            font-weight: bold;
+            z-index: 2;
+        }
+        .exp-label {
+            font-size: 1rem;
+            line-height: 1;
+        }
+        #ui-exp {
+            font-size: 1.3rem;
+            line-height: 1;
+            margin-top: 2px;
+        }
 
         .stat-group {
             position: absolute;
@@ -315,7 +339,10 @@
                     <div id="ui-lvl">1</div>
                 </div>
                 
-                <div id="ui-exp" class="abs-stat">0</div>
+                <div id="ui-exp-container">
+                    <div class="exp-label">EXP</div>
+                    <div id="ui-exp">0</div>
+                </div>
 
                 <div class="stat-group">
                     <div class="stat-label">Bloodline Court:</div>
