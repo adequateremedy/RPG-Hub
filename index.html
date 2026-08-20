@@ -452,7 +452,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
     import { 
-        getAuth, GoogleAuthProvider, signInWithPopup, signOut 
+        getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged 
     } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -468,12 +468,11 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const provider = new GoogleAuthProvider();
-    // Request permission to store data in the user's hidden appDataFolder in Google Drive
     provider.addScope('https://www.googleapis.com/auth/drive.appdata');
     provider.setCustomParameters({ prompt: 'consent' });
 
     // Global state
-    let gDriveToken = null;
+    let gDriveToken = sessionStorage.getItem("gDriveToken") || null;
     let dataFileId = null;
     let playerJsonData = {};
 
@@ -529,7 +528,6 @@
     // --- GOOGLE DRIVE API FUNCTIONS ---
 
     async function getDriveAppData() {
-        // Find character_data.json
         const res = await fetch("https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='character_data.json'", {
             headers: { 'Authorization': `Bearer ${gDriveToken}` }
         });
@@ -537,13 +535,11 @@
         
         if (data.files && data.files.length > 0) {
             dataFileId = data.files[0].id;
-            // Fetch content
             const fileRes = await fetch(`https://www.googleapis.com/drive/v3/files/${dataFileId}?alt=media`, {
                 headers: { 'Authorization': `Bearer ${gDriveToken}` }
             });
             playerJsonData = await fileRes.json();
         } else {
-            // Create new file
             playerJsonData = {
                 starName: "",
                 birthBookCompleted: false,
@@ -564,9 +560,13 @@
     async function saveDriveAppData() {
         const metadata = {
             name: 'character_data.json',
-            parents: ['appDataFolder'],
             mimeType: 'application/json'
         };
+        
+        // ONLY assign parents if creating a new file. PATCH requests fail if parents is included.
+        if (!dataFileId) {
+            metadata.parents = ['appDataFolder'];
+        }
         
         const fileContent = JSON.stringify(playerJsonData);
         const form = new FormData();
@@ -620,7 +620,7 @@
     // --- UI LOGIC ---
 
     function calculateLevel() {
-        let lvl = 1; // Birth Book phase
+        let lvl = 1; 
         if (playerJsonData.comingOfAgeCompleted) lvl = 2;
         if (playerJsonData.traumaCompleted) lvl = 3;
         if (playerJsonData.escapeCompleted) lvl = 4;
@@ -632,11 +632,9 @@
 
         calculateLevel();
 
-        // Update Nav Tabs Data
         starNameDisplay.textContent = playerJsonData.starName || "Star 1";
         gen1NameDisplay.textContent = playerJsonData.characterName ? `${playerJsonData.characterName} - Steampunk` : "Gen 1 - Steampunk";
 
-        // Update Text Stats
         for (const [elementId, dataKey] of Object.entries(elementsToUpdate)) {
             const el = document.getElementById(elementId);
             const val = playerJsonData[dataKey];
@@ -655,13 +653,15 @@
             }
         }
 
-        // Portrait
         if (playerJsonData.portraitId) {
-            const imgUrl = await getImageUrl(playerJsonData.portraitId);
-            document.getElementById("ui-portrait-img").src = imgUrl;
+            try {
+                const imgUrl = await getImageUrl(playerJsonData.portraitId);
+                document.getElementById("ui-portrait-img").src = imgUrl;
+            } catch (err) {
+                console.warn("Failed to load portrait image.", err);
+            }
         }
 
-        // Name Logic
         if (playerJsonData.birthBookCompleted) {
             document.getElementById("newPlayerMessage").classList.add("hidden");
             if (!playerJsonData.characterName) {
@@ -680,7 +680,6 @@
             document.getElementById("newPlayerMessage").classList.remove("hidden");
         }
         
-        // Actions mapping
         const actionsContainer = document.getElementById("actionsContainer");
         actionsContainer.innerHTML = "";
         
@@ -692,7 +691,45 @@
         }
     }
 
+    async function handleUserReady(user) {
+        await getDriveAppData();
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlBirthCourt = urlParams.get('birthCourt');
+        const urlBloodlineCourt = urlParams.get('bloodlineCourt');
+
+        if (urlBirthCourt && urlBloodlineCourt) {
+            playerJsonData.birthCourt = urlBirthCourt;
+            playerJsonData.bloodlineCourt = urlBloodlineCourt;
+            playerJsonData.birthBookCompleted = true;
+            
+            await saveDriveAppData();
+            
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        await buildHubUI(user);
+        
+        loadingScreen.classList.add("hidden");
+        playerScreen.classList.remove("hidden");
+    }
+
     // --- EVENT LISTENERS ---
+
+    onAuthStateChanged(auth, async (user) => {
+        if (user && gDriveToken) {
+            loginScreen.classList.add("hidden");
+            loadingScreen.classList.remove("hidden");
+            try {
+                await handleUserReady(user);
+            } catch (error) {
+                console.error("Auto-login failed:", error);
+                sessionStorage.removeItem("gDriveToken");
+                gDriveToken = null;
+                showError("Session expired or Drive connection failed. Please sign in again.");
+            }
+        }
+    });
 
     document.getElementById("googleSignInButton").addEventListener("click", async () => {
         loginScreen.classList.add("hidden");
@@ -702,29 +739,9 @@
             const result = await signInWithPopup(auth, provider);
             const credential = GoogleAuthProvider.credentialFromResult(result);
             gDriveToken = credential.accessToken;
+            sessionStorage.setItem("gDriveToken", gDriveToken);
             
-            await getDriveAppData();
-
-            // --- URL PARAMETER CHECK ---
-            const urlParams = new URLSearchParams(window.location.search);
-            const urlBirthCourt = urlParams.get('birthCourt');
-            const urlBloodlineCourt = urlParams.get('bloodlineCourt');
-
-            if (urlBirthCourt && urlBloodlineCourt) {
-                playerJsonData.birthCourt = urlBirthCourt;
-                playerJsonData.bloodlineCourt = urlBloodlineCourt;
-                playerJsonData.birthBookCompleted = true;
-                
-                await saveDriveAppData();
-                
-                // Clean URL to prevent re-triggering on refresh
-                window.history.replaceState({}, document.title, window.location.pathname);
-            }
-
-            await buildHubUI(result.user);
-            
-            loadingScreen.classList.add("hidden");
-            playerScreen.classList.remove("hidden");
+            await handleUserReady(result.user);
         } catch (error) {
             console.error(error);
             showError("Sign-in or Drive connection failed.\n" + error.message);
@@ -733,12 +750,12 @@
 
     document.getElementById("signOutButton").addEventListener("click", async () => {
         await signOut(auth);
+        sessionStorage.removeItem("gDriveToken");
         gDriveToken = null;
         playerScreen.classList.add("hidden");
         loginScreen.classList.remove("hidden");
     });
 
-    // Edit Star Name
     editStarBtn.addEventListener("click", () => {
         editStarContainer.classList.toggle("hidden");
         editStarInput.value = playerJsonData.starName || "";
@@ -754,7 +771,6 @@
         }
     });
 
-    // Character Name Save
     saveNameBtn.addEventListener("click", async () => {
         const val = editNameInput.value.trim();
         if (val) {
@@ -767,7 +783,6 @@
         }
     });
 
-    // Image Upload
     const uploadBtn = document.getElementById("ui-portrait-upload-btn");
     const fileInput = document.getElementById("portrait-file-input");
 
