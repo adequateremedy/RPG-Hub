@@ -323,7 +323,7 @@
             font-size: 1.1rem;
             text-align: center;
             padding: 15px;
-            list-style: none; /* Hides default arrow in some browsers */
+            list-style: none;
             border-bottom: 1px solid transparent;
         }
 
@@ -331,7 +331,6 @@
             border-bottom: 1px solid #333;
         }
         
-        /* Custom arrow for summary */
         details.hub-dropdown summary::-webkit-details-marker {
             display: none;
         }
@@ -346,6 +345,55 @@
 
         .dropdown-content {
             padding: 20px 15px;
+        }
+
+        /* MODAL CSS */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-box {
+            background: #111;
+            border: 1px solid #7F522B;
+            border-radius: 8px;
+            width: min(450px, 90%);
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+        }
+        .class-list {
+            list-style: none;
+            padding: 0;
+            text-align: left;
+            margin: 20px 0;
+            font-size: 1.1rem;
+            line-height: 1.8;
+        }
+
+        /* MEMBERS TABLE CSS */
+        .members-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 0.95rem;
+        }
+        .members-table th {
+            border-bottom: 2px solid #7F522B;
+            padding: 12px 10px;
+            color: #e3d2b9;
+            text-align: left;
+        }
+        .members-table td {
+            padding: 10px;
+            border-bottom: 1px solid #333;
+        }
+        .members-table tr:hover {
+            background: rgba(255, 255, 255, 0.03);
         }
 
     </style>
@@ -409,6 +457,7 @@
             <button class="tab-btn" data-target="tab-available">Available</button>
             <button class="tab-btn" data-target="tab-inventory">Inventory</button>
             <button class="tab-btn" data-target="tab-gallery">Gallery</button>
+            <button class="tab-btn" data-target="tab-members" id="tab-members-btn">Members</button>
         </div>
 
         <!-- CHARACTER CARD TAB -->
@@ -481,11 +530,47 @@
         <!-- GALLERY TAB -->
         <div id="tab-gallery" class="hub-section">
             <h2 style="text-align:center; margin-top:40px;">Gallery</h2>
-            <p style="text-align:center; opacity:0.7;">Image gallery coming soon.</p>
+            <p style="text-align:center; opacity:0.7;">Upload and view Roleplay session images here.</p>
+        </div>
+
+        <!-- MEMBERS TAB -->
+        <div id="tab-members" class="hub-section">
+            <h2 style="text-align:center; margin-top:20px; color:#e3d2b9;">Top 50 Members</h2>
+            <table class="members-table">
+                <thead>
+                    <tr>
+                        <th style="width: 10%; text-align: center;">Rank</th>
+                        <th style="width: 40%;">Character</th>
+                        <th style="width: 15%; text-align: center;">Level</th>
+                        <th style="width: 15%; text-align: center;">EXP</th>
+                        <th style="width: 20%; text-align: center;">Era</th>
+                    </tr>
+                </thead>
+                <tbody id="membersTableBody">
+                    <tr>
+                        <td colspan="5" style="text-align:center; padding:20px; opacity:0.6;">Loading members...</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
 
     </section>
 
+</div>
+
+<!-- SCHOOL MODAL -->
+<div id="schoolModal" class="modal-overlay hidden">
+    <div class="modal-box">
+        <h2 style="margin-top:0; color:#e3d2b9; border-bottom:1px solid #444; padding-bottom:10px;">Eidolon School</h2>
+        <ul class="class-list">
+            <li><span id="chk-class1">[ ]</span> Class 1: Gearcraft Basics</li>
+            <li><span id="chk-class2">[ ]</span> Class 2: Hearth Cooking</li>
+            <li><span id="chk-class3">[ ]</span> Class 3: Alchemy Foundations</li>
+            <li><span id="chk-class4">[ ]</span> Class 4: Trade & Tally</li>
+            <li><span id="chk-class5">[ ]</span> Class 5: Runic-Fally</li>
+        </ul>
+        <button id="closeSchoolBtn" style="width:100%;">Close</button>
+    </div>
 </div>
 
 <script type="module">
@@ -493,6 +578,9 @@
     import { 
         getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged 
     } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-auth.js";
+    import { 
+        getFirestore, doc, setDoc, collection, query, orderBy, limit, getDocs, serverTimestamp 
+    } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAeyOzh9YHaQDMSvn-8-ZyVqXkwY_diL5Y",
@@ -506,6 +594,8 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const db = getFirestore(app);
+
     const provider = new GoogleAuthProvider();
     provider.addScope('https://www.googleapis.com/auth/drive.appdata');
     provider.setCustomParameters({ prompt: 'consent' });
@@ -535,6 +625,9 @@
     const saveStarBtn = document.getElementById("save-star-btn");
     const uploadBtn = document.getElementById("ui-portrait-upload-btn");
 
+    const schoolModal = document.getElementById("schoolModal");
+    const closeSchoolBtn = document.getElementById("closeSchoolBtn");
+
     const elementsToUpdate = {
         "ui-lvl": "level",
         "ui-exp": "exp",
@@ -555,6 +648,10 @@
             document.querySelectorAll('.hub-section').forEach(s => s.classList.remove('active'));
             btn.classList.add('active');
             document.getElementById(btn.dataset.target).classList.add('active');
+
+            if (btn.dataset.target === "tab-members") {
+                loadMembersLeaderboard();
+            }
         });
     });
 
@@ -563,6 +660,69 @@
         errorMsg.classList.remove("hidden");
         loadingScreen.classList.add("hidden");
         loginScreen.classList.remove("hidden");
+    }
+
+    // --- FIRESTORE PUBLIC PROFILE SYNC ---
+
+    async function syncProfileToFirestore(user) {
+        if (!user) return;
+        const charName = playerJsonData.characterName || "Unborn";
+        const sName = playerJsonData.starName || "";
+        const fullName = sName ? `${charName} ${sName}` : charName;
+        
+        const memberData = {
+            googleUid: user.uid,
+            email: user.email,
+            displayName: user.displayName || "",
+            characterName: charName,
+            starName: sName,
+            fullName: fullName,
+            level: playerJsonData.level || 1,
+            exp: playerJsonData.exp || 0,
+            era: "Gen 1 - Steampunk",
+            updatedAt: serverTimestamp()
+        };
+        
+        try {
+            await setDoc(doc(db, "players", user.uid), memberData, { merge: true });
+        } catch (err) {
+            console.error("Firestore sync error:", err);
+        }
+    }
+
+    async function loadMembersLeaderboard() {
+        const membersTableBody = document.getElementById("membersTableBody");
+        membersTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; opacity:0.6;">Loading members...</td></tr>`;
+        try {
+            const q = query(collection(db, "players"), orderBy("exp", "desc"), limit(50));
+            const querySnapshot = await getDocs(q);
+            if (querySnapshot.empty) {
+                membersTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; opacity:0.6;">No members found.</td></tr>`;
+                return;
+            }
+            let rows = "";
+            let rank = 1;
+            querySnapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                const name = data.fullName || (data.characterName ? `${data.characterName} ${data.starName || ''}`.trim() : "Unborn");
+                const lvl = data.level !== undefined ? data.level : 1;
+                const exp = data.exp !== undefined ? data.exp : 0;
+                const era = data.era || "Gen 1 - Steampunk";
+                rows += `
+                    <tr>
+                        <td style="text-align: center;">${rank++}</td>
+                        <td>${name}</td>
+                        <td style="text-align: center;">${lvl}</td>
+                        <td style="text-align: center;">${exp}</td>
+                        <td style="text-align: center;">${era}</td>
+                    </tr>
+                `;
+            });
+            membersTableBody.innerHTML = rows;
+        } catch (err) {
+            console.error("Failed to load members:", err);
+            membersTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#ffb0b0; padding:20px;">Failed to load leaderboard.</td></tr>`;
+        }
     }
 
     // --- GOOGLE DRIVE API FUNCTIONS ---
@@ -585,15 +745,19 @@
             });
             playerJsonData = await fileRes.json();
             
-            // Retroactive fallback for older saves to ensure the new flag exists
+            // Retroactive fallback for older saves to ensure the new flags exist
             if (playerJsonData.birthBookExpAwarded === undefined) {
                 playerJsonData.birthBookExpAwarded = playerJsonData.birthBookCompleted;
+            }
+            if (playerJsonData.schoolProgress === undefined) {
+                playerJsonData.schoolProgress = { class1: false, class2: false, class3: false, class4: false, class5: false };
             }
         } else {
             playerJsonData = {
                 starName: "",
                 birthBookCompleted: false,
                 birthBookExpAwarded: false, 
+                schoolProgress: { class1: false, class2: false, class3: false, class4: false, class5: false },
                 comingOfAgeUnlocked: false,
                 comingOfAgeCompleted: false,
                 traumaUnlocked: false,
@@ -642,6 +806,10 @@
             if (result.id) {
                 dataFileId = result.id;
             }
+        }
+
+        if (auth.currentUser) {
+            await syncProfileToFirestore(auth.currentUser);
         }
     }
 
@@ -727,7 +895,7 @@
 
         // Manage Birth Book completion UI logic
         if (playerJsonData.birthBookCompleted) {
-            uploadBtn.classList.remove("hidden"); // Unlock portrait uploads
+            uploadBtn.classList.remove("hidden"); 
 
             if (!playerJsonData.characterName) {
                 uiName.textContent = "Unborn";
@@ -739,7 +907,7 @@
                 editNameContainer.classList.add("hidden");
             }
         } else {
-            uploadBtn.classList.add("hidden"); // Keep portrait locked
+            uploadBtn.classList.add("hidden"); 
             uiName.textContent = "Unborn";
             uiName.classList.remove("hidden");
             editNameContainer.classList.add("hidden");
@@ -781,10 +949,10 @@
 
         } else {
             
-            // POST-BIRTH (NAMED) STATE - Dynamic Dropdowns based on strict progression
+            // POST-BIRTH (NAMED) STATE - Dynamic Dropdowns
             let availableActionsHTML = "";
 
-            // Trial Books System - Only renders if the player meets the 500 EXP requirement
+            // Trial Books System
             if (playerJsonData.exp >= 500) {
                 availableActionsHTML += `
                     <details class="hub-dropdown">
@@ -796,18 +964,92 @@
                 `;
             }
 
-            // Echoes System - Rendered empty for now, unlocked by default after being Named
+            // Echoes System (Includes School button to trigger modal)
             availableActionsHTML += `
                 <details class="hub-dropdown">
                     <summary>Echoes</summary>
-                    <div class="dropdown-content">
+                    <div class="dropdown-content" style="text-align:center;">
+                        <button id="openSchoolBtn" style="border-color: #7F522B; color: #e3d2b9; padding: 12px 20px; font-weight: bold; width: 100%; max-width: 400px;">School</button>
                     </div>
                 </details>
             `;
 
-            // Note: Experiences dropdown is completely removed until unlocked systems are built for it.
+            // Experiences System (Live RP & Writing tracker)
+            availableActionsHTML += `
+                <details class="hub-dropdown">
+                    <summary>Experiences</summary>
+                    <div class="dropdown-content">
+                        <label style="font-weight:bold; color:#7F522B;">Choose a Scene to document your experience:</label>
+                        <select id="sceneSelect" style="width:100%; padding:10px; margin-top:8px; background:#222; color:#fff; border:1px solid #444; font-family:inherit; border-radius:4px;">
+                            <option value="">-- Select Scene --</option>
+                            <option value="library">a. Local Library</option>
+                            <option value="cityhall">b. City Hall</option>
+                            <option value="bakery">c. Bakery</option>
+                            <option value="home">d. Home</option>
+                        </select>
+
+                        <div id="scenePrompt" class="hidden" style="margin-top:15px; padding:15px; background:rgba(255,255,255,0.05); border-left:4px solid #7F522B; font-style:italic;"></div>
+
+                        <div id="sceneAction" class="hidden" style="margin-top:20px;">
+                            <p style="font-size:0.95rem; opacity:0.9; margin-bottom:10px;">
+                                Please describe the experience you had or complete a Roleplay Session (social).<br><br>
+                                <strong>For Solo Writing:</strong> Write an entry of no less than 500 words below. It will be saved as a document to your Hub.<br>
+                                <strong>For Live RP:</strong> Document proof by saving no less than 5 session images to your Gallery tab.
+                            </p>
+                            <textarea id="sceneTextarea" rows="8" style="width:100%; padding:10px; background:#1a1a1a; color:#eee; border:1px solid #444; font-family:inherit; border-radius:4px;" placeholder="Begin your writing entry here..."></textarea>
+                            <button id="saveSceneBtn" style="margin-top:15px; width:100%; border-color:#7F522B; font-weight:bold;">Save Experience</button>
+                        </div>
+                    </div>
+                </details>
+            `;
 
             actionsContainer.innerHTML = availableActionsHTML;
+            
+            // Attach event listeners for the dynamically created buttons inside the Hub
+            const openSchoolBtn = document.getElementById("openSchoolBtn");
+            if(openSchoolBtn) {
+                openSchoolBtn.addEventListener("click", () => {
+                    document.getElementById("chk-class1").textContent = playerJsonData.schoolProgress.class1 ? "[X]" : "[ ]";
+                    document.getElementById("chk-class2").textContent = playerJsonData.schoolProgress.class2 ? "[X]" : "[ ]";
+                    document.getElementById("chk-class3").textContent = playerJsonData.schoolProgress.class3 ? "[X]" : "[ ]";
+                    document.getElementById("chk-class4").textContent = playerJsonData.schoolProgress.class4 ? "[X]" : "[ ]";
+                    document.getElementById("chk-class5").textContent = playerJsonData.schoolProgress.class5 ? "[X]" : "[ ]";
+                    schoolModal.classList.remove("hidden");
+                });
+            }
+
+            // Experiences Dropdown Logic
+            const sceneSelect = document.getElementById("sceneSelect");
+            const scenePrompt = document.getElementById("scenePrompt");
+            const sceneAction = document.getElementById("sceneAction");
+            const saveSceneBtn = document.getElementById("saveSceneBtn");
+
+            const prompts = {
+                "library": "Another trip to the local library leaves you with mixed feelings...",
+                "cityhall": "The towering architecture of City Hall looms above, echoing with the sounds of shifting politics...",
+                "bakery": "The scent of fresh bread and warm sugar draws you to the local bakery window...",
+                "home": "Returning home, the familiar walls offer a quiet moment of reflection..."
+            };
+
+            if(sceneSelect) {
+                sceneSelect.addEventListener("change", (e) => {
+                    const val = e.target.value;
+                    if(val && prompts[val]) {
+                        scenePrompt.textContent = prompts[val];
+                        scenePrompt.classList.remove("hidden");
+                        sceneAction.classList.remove("hidden");
+                    } else {
+                        scenePrompt.classList.add("hidden");
+                        sceneAction.classList.add("hidden");
+                    }
+                });
+            }
+
+            if(saveSceneBtn) {
+                saveSceneBtn.addEventListener("click", () => {
+                    alert("Experience Save logic will be connected next.");
+                });
+            }
         }
     }
 
@@ -837,6 +1079,8 @@
 
         if (dataChanged) {
             await saveDriveAppData();
+        } else {
+            await syncProfileToFirestore(user);
         }
 
         await buildHubUI(user);
@@ -901,7 +1145,6 @@
             editStarBtn.classList.add("hidden");
             await saveDriveAppData();
             
-            // Re-render UI to update instructions instantly
             await buildHubUI(auth.currentUser);
         }
     });
@@ -916,7 +1159,6 @@
             gen1NameDisplay.textContent = `${val} - Steampunk`;
             await saveDriveAppData();
             
-            // Re-render UI to instantly unlock the Dropdown Menus
             await buildHubUI(auth.currentUser);
         }
     });
@@ -945,6 +1187,11 @@
             uploadBtn.disabled = false;
         }
     });
+
+    closeSchoolBtn.addEventListener("click", () => {
+        schoolModal.classList.add("hidden");
+    });
+
 </script>
 </body>
 </html>
