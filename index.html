@@ -304,6 +304,50 @@
             font-family: inherit;
         }
 
+        /* AVAILABLE DROPDOWNS */
+        details.hub-dropdown {
+            width: 100%;
+            max-width: 500px;
+            background: #111;
+            border: 1px solid #444;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        
+        details.hub-dropdown summary {
+            cursor: pointer;
+            font-weight: bold;
+            outline: none;
+            color: #e3d2b9;
+            font-size: 1.1rem;
+            text-align: center;
+            padding: 15px;
+            list-style: none; /* Hides default arrow in some browsers */
+            border-bottom: 1px solid transparent;
+        }
+
+        details[open].hub-dropdown summary {
+            border-bottom: 1px solid #333;
+        }
+        
+        /* Custom arrow for summary */
+        details.hub-dropdown summary::-webkit-details-marker {
+            display: none;
+        }
+        details.hub-dropdown summary::before {
+            content: "▼ ";
+            font-size: 0.9rem;
+            color: #7F522B;
+        }
+        details[open].hub-dropdown summary::before {
+            content: "▲ ";
+        }
+
+        .dropdown-content {
+            padding: 20px 15px;
+        }
+
     </style>
 </head>
 <body>
@@ -364,7 +408,7 @@
             <button class="tab-btn active" data-target="tab-character">Character Card</button>
             <button class="tab-btn" data-target="tab-available">Available</button>
             <button class="tab-btn" data-target="tab-inventory">Inventory</button>
-            <button class="tab-btn" data-target="tab-saved-images">Saved Images</button>
+            <button class="tab-btn" data-target="tab-gallery">Gallery</button>
         </div>
 
         <!-- CHARACTER CARD TAB -->
@@ -374,7 +418,8 @@
                 <!-- Portrait -->
                 <div id="ui-portrait-container">
                     <img id="ui-portrait-img" src="" alt="">
-                    <button id="ui-portrait-upload-btn">Upload Image</button>
+                    <!-- Hidden by default until Birth Book is complete -->
+                    <button id="ui-portrait-upload-btn" class="hidden">Upload Image</button>
                     <input type="file" id="portrait-file-input" accept="image/*" class="hidden">
                 </div>
 
@@ -424,13 +469,7 @@
         <!-- AVAILABLE TAB -->
         <div id="tab-available" class="hub-section">
             <h2 style="text-align:center; margin-top:20px;">Available Actions</h2>
-            
-            <div id="newPlayerMessage" class="hidden" style="text-align: center; margin: 30px 0;">
-                <p><strong>You have not established a Star in the Solus Dynasty Universe yet.</strong></p>
-                <button onclick="window.location.href='https://adequateremedy.github.io/BirthBook/'" style="margin-top: 15px;">Begin Birth Book</button>
-            </div>
-
-            <div id="actionsContainer" style="margin-top:20px; display:flex; flex-direction:column; gap:15px; align-items:center;"></div>
+            <div id="actionsContainer" style="margin-top:20px; display:flex; flex-direction:column; align-items:center;"></div>
         </div>
 
         <!-- INVENTORY TAB -->
@@ -439,9 +478,9 @@
             <p style="text-align:center; opacity:0.7;">Inventory features coming soon.</p>
         </div>
 
-        <!-- SAVED IMAGES TAB -->
-        <div id="tab-saved-images" class="hub-section">
-            <h2 style="text-align:center; margin-top:40px;">Saved Images</h2>
+        <!-- GALLERY TAB -->
+        <div id="tab-gallery" class="hub-section">
+            <h2 style="text-align:center; margin-top:40px;">Gallery</h2>
             <p style="text-align:center; opacity:0.7;">Image gallery coming soon.</p>
         </div>
 
@@ -494,6 +533,7 @@
     const editStarContainer = document.getElementById("edit-star-container");
     const editStarInput = document.getElementById("edit-star-input");
     const saveStarBtn = document.getElementById("save-star-btn");
+    const uploadBtn = document.getElementById("ui-portrait-upload-btn");
 
     const elementsToUpdate = {
         "ui-lvl": "level",
@@ -544,10 +584,16 @@
                 headers: { 'Authorization': `Bearer ${gDriveToken}` }
             });
             playerJsonData = await fileRes.json();
+            
+            // Retroactive fallback for older saves to ensure the new flag exists
+            if (playerJsonData.birthBookExpAwarded === undefined) {
+                playerJsonData.birthBookExpAwarded = false;
+            }
         } else {
             playerJsonData = {
                 starName: "",
                 birthBookCompleted: false,
+                birthBookExpAwarded: false, 
                 comingOfAgeUnlocked: false,
                 comingOfAgeCompleted: false,
                 traumaUnlocked: false,
@@ -640,7 +686,16 @@
 
         calculateLevel();
 
-        starNameDisplay.textContent = playerJsonData.starName || "Star 1";
+        // Manage Star Name Permanence
+        if (playerJsonData.starName) {
+            starNameDisplay.textContent = playerJsonData.starName;
+            editStarBtn.classList.add("hidden");
+            editStarContainer.classList.add("hidden");
+        } else {
+            starNameDisplay.textContent = "Star 1";
+            editStarBtn.classList.remove("hidden");
+        }
+
         gen1NameDisplay.textContent = playerJsonData.characterName ? `${playerJsonData.characterName} - Steampunk` : "Gen 1 - Steampunk";
 
         for (const [elementId, dataKey] of Object.entries(elementsToUpdate)) {
@@ -670,8 +725,10 @@
             }
         }
 
+        // Manage Birth Book completion UI logic
         if (playerJsonData.birthBookCompleted) {
-            document.getElementById("newPlayerMessage").classList.add("hidden");
+            uploadBtn.classList.remove("hidden"); // Unlock portrait uploads
+
             if (!playerJsonData.characterName) {
                 uiName.textContent = "Unborn";
                 uiName.classList.add("hidden");
@@ -682,39 +739,77 @@
                 editNameContainer.classList.add("hidden");
             }
         } else {
+            uploadBtn.classList.add("hidden"); // Keep portrait locked
             uiName.textContent = "Unborn";
             uiName.classList.remove("hidden");
             editNameContainer.classList.add("hidden");
-            document.getElementById("newPlayerMessage").classList.remove("hidden");
         }
         
-        // --- ACTION TAB UPDATES ---
+        // --- ACTION TAB PROGRESSION LOGIC ---
         const actionsContainer = document.getElementById("actionsContainer");
         actionsContainer.innerHTML = "";
         
-        if (playerJsonData.birthBookCompleted) {
-            if (!playerJsonData.characterName) {
-                actionsContainer.innerHTML = `<p style="opacity:0.8; text-align:center;">Enter your character's name on the Character Card to officially be Born into the world.</p>`;
-            } else {
-                
-                // Placeholder area where the 3 mini-games will go later
-                actionsContainer.innerHTML += `<p style="opacity: 0.6; font-size: 0.9rem; text-align: center; margin-bottom: 5px;">Childhood Mini-Games (Coming Soon)</p>`;
-                
-                // Awakening Essence Check
-                if (playerJsonData.exp >= 500) {
-                    actionsContainer.innerHTML += `<button onclick="window.location.href='https://adequateremedy.github.io/Awakening_Essence/'" style="border-color: #7F522B; color: #e3d2b9; padding: 12px 20px; font-weight: bold;">Play Awakening Essence</button>`;
-                } else {
-                    actionsContainer.innerHTML += `<button disabled title="Reach 500 EXP to unlock">Awakening Essence (Locked: ${playerJsonData.exp}/500 EXP)</button>`;
-                }
-                
-                // Existing Test Buttons
-                if (playerJsonData.comingOfAgeUnlocked && !playerJsonData.comingOfAgeCompleted) {
-                    actionsContainer.innerHTML += `<button onclick="alert('Coming of Age is unlocked.')">Coming of Age</button>`;
-                }
-                if (playerJsonData.traumaUnlocked && !playerJsonData.traumaCompleted) {
-                    actionsContainer.innerHTML += `<button onclick="alert('Trauma Trial unlocked.')">Trauma Trial</button>`;
-                }
-            }
+        if (!playerJsonData.birthBookCompleted) {
+            
+            // PRE-BIRTH STATE
+            let instructions = `
+                <div style="text-align: center; max-width: 600px; margin: 10px auto;">
+                    <p style="opacity:0.9; margin-bottom: 25px; line-height: 1.6;">
+                        Welcome to the Solus Dynasty Universe. 
+                        <br><br>
+                        <strong>1. Name your Star:</strong> Use the pencil icon next to "Star 1" above. The name of your Star serves as the permanent last name for all 5 characters in this lineage and cannot be changed once set.
+                        <br><br>
+                        <strong>2. Complete the Birth Book:</strong> Begin the pre-birth sensory choice system to establish your character's baseline stats.
+                    </p>
+                    <button onclick="window.location.href='https://adequateremedy.github.io/BirthBook/'" style="border-color: #7F522B; color: #e3d2b9; padding: 12px 25px; font-weight: bold; font-size: 1.1rem;">Begin Birth Book</button>
+                </div>
+            `;
+            actionsContainer.innerHTML = instructions;
+
+        } else if (playerJsonData.birthBookCompleted && !playerJsonData.characterName) {
+            
+            // POST-BIRTH (UN-NAMED) STATE
+            actionsContainer.innerHTML = `
+                <div style="text-align: center; max-width: 500px; margin: 20px auto;">
+                    <p style="opacity:0.9; line-height: 1.6;">
+                        Your baseline stats have been established. You may now upload a portrait image on your Character Card.
+                        <br><br>
+                        To officially be Born into the world, enter your character's first name on the Character Card. Like your Star name, this name is permanent.
+                    </p>
+                </div>
+            `;
+
+        } else {
+            
+            // POST-BIRTH (NAMED) STATE - The 3 Dropdowns
+            
+            // Trial Books System
+            let trialBooksContent = playerJsonData.exp >= 500 
+                ? `<button onclick="window.location.href='https://adequateremedy.github.io/Awakening_Essence/'" style="border-color: #7F522B; color: #e3d2b9; padding: 12px 20px; font-weight: bold; width: 100%; max-width: 400px; display: block; margin: 0 auto;">Play Awakening Essence</button>`
+                : `<p style="opacity: 0.7; text-align: center; margin: 0;">Awakening Essence requires 500 EXP to unlock.</p>`;
+
+            actionsContainer.innerHTML = `
+                <details class="hub-dropdown">
+                    <summary>Trial Books</summary>
+                    <div class="dropdown-content">
+                        ${trialBooksContent}
+                    </div>
+                </details>
+
+                <details class="hub-dropdown">
+                    <summary>Echoes</summary>
+                    <div class="dropdown-content">
+                        <p style="opacity: 0.7; text-align: center; margin: 0;">Daily activities to earn EXP.<br><span style="font-size: 0.85rem;">(Childhood Mini-games coming soon)</span></p>
+                    </div>
+                </details>
+
+                <details class="hub-dropdown">
+                    <summary>Experiences</summary>
+                    <div class="dropdown-content">
+                        <p style="opacity: 0.7; text-align: center; margin: 0;">World events and exploration.<br><span style="font-size: 0.85rem;">(Coming soon)</span></p>
+                    </div>
+                </details>
+            `;
         }
     }
 
@@ -735,9 +830,10 @@
             window.history.replaceState({}, document.title, window.location.pathname);
         }
 
-        // Retroactively ensures the player has at least 50 EXP if the Birth Book is completed
-        if (playerJsonData.birthBookCompleted && playerJsonData.exp < 50) {
-            playerJsonData.exp = 50;
+        // ONE-TIME 50 EXP REWARD
+        if (playerJsonData.birthBookCompleted && !playerJsonData.birthBookExpAwarded) {
+            playerJsonData.exp = (playerJsonData.exp || 0) + 50;
+            playerJsonData.birthBookExpAwarded = true; 
             dataChanged = true;
         }
 
@@ -804,7 +900,11 @@
             playerJsonData.starName = val;
             starNameDisplay.textContent = val;
             editStarContainer.classList.add("hidden");
+            editStarBtn.classList.add("hidden");
             await saveDriveAppData();
+            
+            // Re-render UI to update instructions instantly
+            await buildHubUI(auth.currentUser);
         }
     });
 
@@ -818,12 +918,11 @@
             gen1NameDisplay.textContent = `${val} - Steampunk`;
             await saveDriveAppData();
             
-            // Re-render UI to immediately unlock the Available tab actions
+            // Re-render UI to instantly unlock the Dropdown Menus
             await buildHubUI(auth.currentUser);
         }
     });
 
-    const uploadBtn = document.getElementById("ui-portrait-upload-btn");
     const fileInput = document.getElementById("portrait-file-input");
 
     uploadBtn.addEventListener("click", () => fileInput.click());
