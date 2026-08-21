@@ -533,7 +533,6 @@
         });
         const data = await res.json();
         
-        // Prevent accidental file overwrite if API token expires or fails
         if (data.error) {
             console.error("Drive API Error:", data.error);
             throw new Error(data.error.message); 
@@ -565,7 +564,6 @@
 
     async function saveDriveAppData() {
         if (dataFileId) {
-            // UPDATE EXISTING FILE: Direct media upload prevents metadata/parent folder conflicts
             const url = `https://www.googleapis.com/upload/drive/v3/files/${dataFileId}?uploadType=media`;
             const res = await fetch(url, {
                 method: 'PATCH',
@@ -579,7 +577,6 @@
                 console.error("Failed to update save file on Google Drive.");
             }
         } else {
-            // CREATE NEW FILE: Requires multipart to set initial metadata and folder parent
             const metadata = {
                 name: 'character_data.json',
                 parents: ['appDataFolder'],
@@ -691,14 +688,33 @@
             document.getElementById("newPlayerMessage").classList.remove("hidden");
         }
         
+        // --- ACTION TAB UPDATES ---
         const actionsContainer = document.getElementById("actionsContainer");
         actionsContainer.innerHTML = "";
         
-        if (playerJsonData.comingOfAgeUnlocked && !playerJsonData.comingOfAgeCompleted) {
-            actionsContainer.innerHTML += `<button onclick="alert('Coming of Age is unlocked.')">Coming of Age</button>`;
-        }
-        if (playerJsonData.traumaUnlocked && !playerJsonData.traumaCompleted) {
-            actionsContainer.innerHTML += `<button onclick="alert('Trauma Trial unlocked.')">Trauma Trial</button>`;
+        if (playerJsonData.birthBookCompleted) {
+            if (!playerJsonData.characterName) {
+                actionsContainer.innerHTML = `<p style="opacity:0.8; text-align:center;">Enter your character's name on the Character Card to officially be Born into the world.</p>`;
+            } else {
+                
+                // Placeholder area where the 3 mini-games will go later
+                actionsContainer.innerHTML += `<p style="opacity: 0.6; font-size: 0.9rem; text-align: center; margin-bottom: 5px;">Childhood Mini-Games (Coming Soon)</p>`;
+                
+                // Awakening Essence Check
+                if (playerJsonData.exp >= 500) {
+                    actionsContainer.innerHTML += `<button onclick="window.location.href='https://adequateremedy.github.io/Awakening_Essence/'" style="border-color: #7F522B; color: #e3d2b9; padding: 12px 20px; font-weight: bold;">Play Awakening Essence</button>`;
+                } else {
+                    actionsContainer.innerHTML += `<button disabled title="Reach 500 EXP to unlock">Awakening Essence (Locked: ${playerJsonData.exp}/500 EXP)</button>`;
+                }
+                
+                // Existing Test Buttons
+                if (playerJsonData.comingOfAgeUnlocked && !playerJsonData.comingOfAgeCompleted) {
+                    actionsContainer.innerHTML += `<button onclick="alert('Coming of Age is unlocked.')">Coming of Age</button>`;
+                }
+                if (playerJsonData.traumaUnlocked && !playerJsonData.traumaCompleted) {
+                    actionsContainer.innerHTML += `<button onclick="alert('Trauma Trial unlocked.')">Trauma Trial</button>`;
+                }
+            }
         }
     }
 
@@ -708,15 +724,25 @@
         const urlParams = new URLSearchParams(window.location.search);
         const urlBirthCourt = urlParams.get('birthCourt');
         const urlBloodlineCourt = urlParams.get('bloodlineCourt');
+        let dataChanged = false;
 
+        // Completes the Birth Book if URL params are present
         if (urlBirthCourt && urlBloodlineCourt) {
             playerJsonData.birthCourt = urlBirthCourt;
             playerJsonData.bloodlineCourt = urlBloodlineCourt;
             playerJsonData.birthBookCompleted = true;
-            
-            await saveDriveAppData();
-            
+            dataChanged = true;
             window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        // Retroactively ensures the player has at least 50 EXP if the Birth Book is completed
+        if (playerJsonData.birthBookCompleted && playerJsonData.exp < 50) {
+            playerJsonData.exp = 50;
+            dataChanged = true;
+        }
+
+        if (dataChanged) {
+            await saveDriveAppData();
         }
 
         await buildHubUI(user);
@@ -791,6 +817,9 @@
             editNameContainer.classList.add("hidden");
             gen1NameDisplay.textContent = `${val} - Steampunk`;
             await saveDriveAppData();
+            
+            // Re-render UI to immediately unlock the Available tab actions
+            await buildHubUI(auth.currentUser);
         }
     });
 
@@ -820,6 +849,5 @@
         }
     });
 </script>
-
 </body>
 </html>
