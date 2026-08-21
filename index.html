@@ -830,6 +830,13 @@
             window.history.replaceState({}, document.title, window.location.pathname);
         }
 
+        // CORRECTION FOR DOUBLE-EXP BUG
+        if (playerJsonData.birthBookCompleted && playerJsonData.exp === 100) {
+            playerJsonData.exp = 50;
+            playerJsonData.birthBookExpAwarded = true;
+            dataChanged = true;
+        }
+
         // ONE-TIME 50 EXP REWARD
         if (playerJsonData.birthBookCompleted && !playerJsonData.birthBookExpAwarded) {
             playerJsonData.exp = (playerJsonData.exp || 0) + 50;
