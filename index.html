@@ -781,35 +781,33 @@
 
         } else {
             
-            // POST-BIRTH (NAMED) STATE - The 3 Dropdowns
-            
-            // Trial Books System
-            let trialBooksContent = playerJsonData.exp >= 500 
-                ? `<button onclick="window.location.href='https://adequateremedy.github.io/Awakening_Essence/'" style="border-color: #7F522B; color: #e3d2b9; padding: 12px 20px; font-weight: bold; width: 100%; max-width: 400px; display: block; margin: 0 auto;">Play Awakening Essence</button>`
-                : `<p style="opacity: 0.7; text-align: center; margin: 0;">Awakening Essence requires 500 EXP to unlock.</p>`;
+            // POST-BIRTH (NAMED) STATE - Dynamic Dropdowns based on strict progression
+            let availableActionsHTML = "";
 
-            actionsContainer.innerHTML = `
-                <details class="hub-dropdown">
-                    <summary>Trial Books</summary>
-                    <div class="dropdown-content">
-                        ${trialBooksContent}
-                    </div>
-                </details>
+            // Trial Books System - Only renders if the player meets the 500 EXP requirement
+            if (playerJsonData.exp >= 500) {
+                availableActionsHTML += `
+                    <details class="hub-dropdown">
+                        <summary>Trial Books</summary>
+                        <div class="dropdown-content">
+                            <button onclick="window.location.href='https://adequateremedy.github.io/Awakening_Essence/'" style="border-color: #7F522B; color: #e3d2b9; padding: 12px 20px; font-weight: bold; width: 100%; max-width: 400px; display: block; margin: 0 auto;">Play Awakening Essence</button>
+                        </div>
+                    </details>
+                `;
+            }
 
+            // Echoes System - Rendered empty for now, unlocked by default after being Named
+            availableActionsHTML += `
                 <details class="hub-dropdown">
                     <summary>Echoes</summary>
                     <div class="dropdown-content">
-                        <p style="opacity: 0.7; text-align: center; margin: 0;">Daily activities to earn EXP.<br><span style="font-size: 0.85rem;">(Childhood Mini-games coming soon)</span></p>
-                    </div>
-                </details>
-
-                <details class="hub-dropdown">
-                    <summary>Experiences</summary>
-                    <div class="dropdown-content">
-                        <p style="opacity: 0.7; text-align: center; margin: 0;">World events and exploration.<br><span style="font-size: 0.85rem;">(Coming soon)</span></p>
                     </div>
                 </details>
             `;
+
+            // Note: Experiences dropdown is completely removed until unlocked systems are built for it.
+
+            actionsContainer.innerHTML = availableActionsHTML;
         }
     }
 
