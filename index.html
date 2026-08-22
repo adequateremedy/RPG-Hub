@@ -1056,7 +1056,13 @@
         const actionsContainer = document.getElementById("actionsContainer");
         actionsContainer.innerHTML = "";
         
-        if (!playerJsonData.birthBookCompleted) {
+        const isBirthBookComplete = playerJsonData.birthBookCompleted;
+        const hasCharacterName = !!playerJsonData.characterName;
+        const hasStarName = !!playerJsonData.starName;
+        const hasPortrait = !!playerJsonData.portraitId;
+        const isFullySetup = isBirthBookComplete && hasCharacterName && hasStarName && hasPortrait;
+        
+        if (!isBirthBookComplete) {
             let instructions = `
                 <div style="text-align: center; max-width: 600px; margin: 10px auto;">
                     <p style="opacity:0.9; margin-bottom: 25px; line-height: 1.6;">
@@ -1070,14 +1076,22 @@
                 </div>
             `;
             actionsContainer.innerHTML = instructions;
-        } else if (playerJsonData.birthBookCompleted && !playerJsonData.characterName) {
+        } else if (!isFullySetup) {
+            let charCheck = hasCharacterName ? "✅" : "❌";
+            let starCheck = hasStarName ? "✅" : "❌";
+            let portCheck = hasPortrait ? "✅" : "❌";
+
             actionsContainer.innerHTML = `
                 <div style="text-align: center; max-width: 500px; margin: 20px auto;">
-                    <p style="opacity:0.9; line-height: 1.6;">
-                        Your baseline stats have been established. You may now upload a portrait image on your Character Card.
-                        <br><br>
-                        To officially be Born into the world, enter your character's first name on the Character Card. Like your Star name, this name is permanent.
+                    <p style="opacity:0.9; line-height: 1.6; color: #e3d2b9;">
+                        Your baseline stats have been established, but you are not yet fully Born into the world.<br><br>
+                        To unlock School and Journal experiences, please ensure you have completed the following:
                     </p>
+                    <ul style="list-style: none; padding: 0; text-align: left; max-width: 350px; margin: 20px auto; line-height: 2; opacity:0.9;">
+                        <li>${starCheck} Name your Star (Top bar)</li>
+                        <li>${charCheck} Name your Character (Character Card tab)</li>
+                        <li>${portCheck} Upload a Character Portrait (Character Card tab)</li>
+                    </ul>
                 </div>
             `;
         } else {
