@@ -177,7 +177,6 @@
             font-style: italic;
         }
 
-        /* Positions mapped to the card's visual layout */
         #ui-name { top: 65px; left: 150px; width: 300px; text-align: center; font-size: 1.8rem; }
         
         #ui-lvl-container {
@@ -255,7 +254,6 @@
             font-weight: bold;
         }
 
-        /* PORTRAIT OVERLAY */
         #ui-portrait-container {
             position: absolute;
             top: 150px;
@@ -287,7 +285,6 @@
             z-index: 2;
         }
 
-        /* EDITABLE NAME INPUT */
         #edit-name-container {
             position: absolute;
             top: 60px;
@@ -307,7 +304,7 @@
         /* AVAILABLE DROPDOWNS */
         details.hub-dropdown {
             width: 100%;
-            max-width: 500px;
+            max-width: 600px;
             background: #111;
             border: 1px solid #444;
             border-radius: 8px;
@@ -396,6 +393,42 @@
             background: rgba(255, 255, 255, 0.03);
         }
 
+        /* JOURNAL ENTRY CSS */
+        .journal-entry {
+            background: #111;
+            border: 1px solid #333;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+        .journal-entry-header {
+            display: flex;
+            justify-content: space-between;
+            color: #7F522B;
+            font-weight: bold;
+            border-bottom: 1px solid #333;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+        .journal-entry-text {
+            white-space: pre-wrap;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        .journal-image-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .journal-img {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border: 1px solid #444;
+            border-radius: 4px;
+        }
+
     </style>
 </head>
 <body>
@@ -414,6 +447,7 @@
     <!-- LOADING SCREEN -->
     <section id="loadingScreen" class="hidden">
         <p>Loading your RPG data from Google Drive...</p>
+        <p id="loadingStatusText" style="font-size: 0.85rem; opacity: 0.7; margin-top: 10px;"></p>
     </section>
 
     <!-- PLAYER HUB -->
@@ -456,7 +490,7 @@
             <button class="tab-btn active" data-target="tab-character">Character Card</button>
             <button class="tab-btn" data-target="tab-available">Available</button>
             <button class="tab-btn" data-target="tab-inventory">Inventory</button>
-            <button class="tab-btn" data-target="tab-gallery">Gallery</button>
+            <button class="tab-btn" data-target="tab-journal">Journal & Gallery</button>
             <button class="tab-btn" data-target="tab-members" id="tab-members-btn">Members</button>
         </div>
 
@@ -467,12 +501,10 @@
                 <!-- Portrait -->
                 <div id="ui-portrait-container">
                     <img id="ui-portrait-img" src="" alt="">
-                    <!-- Hidden by default until Birth Book is complete -->
                     <button id="ui-portrait-upload-btn" class="hidden">Upload Image</button>
                     <input type="file" id="portrait-file-input" accept="image/*" class="hidden">
                 </div>
 
-                <!-- Absolutely Positioned Elements -->
                 <div id="ui-name" class="abs-stat">Unborn</div>
                 
                 <div id="edit-name-container" class="hidden">
@@ -527,10 +559,12 @@
             <p style="text-align:center; opacity:0.7;">Inventory features coming soon.</p>
         </div>
 
-        <!-- GALLERY TAB -->
-        <div id="tab-gallery" class="hub-section">
-            <h2 style="text-align:center; margin-top:40px;">Gallery</h2>
-            <p style="text-align:center; opacity:0.7;">Upload and view Roleplay session images here.</p>
+        <!-- JOURNAL & GALLERY TAB -->
+        <div id="tab-journal" class="hub-section">
+            <h2 style="text-align:center; margin-top:40px;">Journal & Gallery</h2>
+            <div id="journalEntriesContainer" style="margin-top:20px;">
+                <p style="text-align:center; opacity:0.7;">No journal entries yet.</p>
+            </div>
         </div>
 
         <!-- MEMBERS TAB -->
@@ -563,11 +597,11 @@
     <div class="modal-box">
         <h2 style="margin-top:0; color:#e3d2b9; border-bottom:1px solid #444; padding-bottom:10px;">Eidolon School</h2>
         <ul class="class-list">
-            <li><span id="chk-class1">[ ]</span> Class 1: Gearcraft Basics</li>
-            <li><span id="chk-class2">[ ]</span> Class 2: Hearth Cooking</li>
-            <li><span id="chk-class3">[ ]</span> Class 3: Alchemy Foundations</li>
-            <li><span id="chk-class4">[ ]</span> Class 4: Trade & Tally</li>
-            <li><span id="chk-class5">[ ]</span> Class 5: Runic-Fally</li>
+            <li><span id="chk-class1">[ ]</span> Class 1: Runic-Fally (Ages 2-3)</li>
+            <li><span id="chk-class2">[ ]</span> Class 2: Trade & Tally (Ages 4-5)</li>
+            <li><span id="chk-class3">[ ]</span> Class 3: Hearth Cooking (Ages 6-7)</li>
+            <li><span id="chk-class4">[ ]</span> Class 4: Alchemy Foundations (Ages 8-9)</li>
+            <li><span id="chk-class5">[ ]</span> Class 5: Gearcraft Basics (Ages 10-11)</li>
         </ul>
         <button id="closeSchoolBtn" style="width:100%;">Close</button>
     </div>
@@ -604,14 +638,15 @@
     let gDriveToken = sessionStorage.getItem("gDriveToken") || null;
     let dataFileId = null;
     let playerJsonData = {};
+    const maxJournalEntries = 5;
 
     // DOM Elements
     const loginScreen = document.getElementById("loginScreen");
     const loadingScreen = document.getElementById("loadingScreen");
+    const loadingStatusText = document.getElementById("loadingStatusText");
     const playerScreen = document.getElementById("playerScreen");
     const errorMsg = document.getElementById("errorMessage");
     
-    // UI Elements
     const uiName = document.getElementById("ui-name");
     const editNameContainer = document.getElementById("edit-name-container");
     const editNameInput = document.getElementById("edit-name-input");
@@ -641,7 +676,7 @@
         "ui-def-hp": "defensiveMagicHp"
     };
 
-    // Tier 3 Tabs logic (Sections)
+    // Tier 3 Tabs logic
     document.querySelectorAll('.tier-3 .tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.tier-3 .tab-btn').forEach(b => b.classList.remove('active'));
@@ -660,6 +695,19 @@
         errorMsg.classList.remove("hidden");
         loadingScreen.classList.add("hidden");
         loginScreen.classList.remove("hidden");
+    }
+
+    function showLoading(msg) {
+        loadingScreen.classList.remove("hidden");
+        loginScreen.classList.add("hidden");
+        playerScreen.classList.add("hidden");
+        loadingStatusText.textContent = msg || "Loading...";
+    }
+
+    function hideLoading() {
+        loadingScreen.classList.add("hidden");
+        playerScreen.classList.remove("hidden");
+        loadingStatusText.textContent = "";
     }
 
     // --- FIRESTORE PUBLIC PROFILE SYNC ---
@@ -745,12 +793,14 @@
             });
             playerJsonData = await fileRes.json();
             
-            // Retroactive fallback for older saves to ensure the new flags exist
             if (playerJsonData.birthBookExpAwarded === undefined) {
                 playerJsonData.birthBookExpAwarded = playerJsonData.birthBookCompleted;
             }
             if (playerJsonData.schoolProgress === undefined) {
                 playerJsonData.schoolProgress = { class1: false, class2: false, class3: false, class4: false, class5: false };
+            }
+            if (playerJsonData.journalEntries === undefined) {
+                playerJsonData.journalEntries = [];
             }
         } else {
             playerJsonData = {
@@ -758,6 +808,7 @@
                 birthBookCompleted: false,
                 birthBookExpAwarded: false, 
                 schoolProgress: { class1: false, class2: false, class3: false, class4: false, class5: false },
+                journalEntries: [],
                 comingOfAgeUnlocked: false,
                 comingOfAgeCompleted: false,
                 traumaUnlocked: false,
@@ -849,12 +900,60 @@
         playerJsonData.level = lvl;
     }
 
+    async function renderJournalGallery() {
+        const container = document.getElementById("journalEntriesContainer");
+        const entries = playerJsonData.journalEntries || [];
+        
+        if (entries.length === 0) {
+            container.innerHTML = `<p style="text-align:center; opacity:0.7;">No journal entries yet.</p>`;
+            return;
+        }
+
+        container.innerHTML = "";
+        for (let i = entries.length - 1; i >= 0; i--) {
+            const entry = entries[i];
+            const div = document.createElement("div");
+            div.className = "journal-entry";
+            
+            let imgHTML = "";
+            if (entry.images && entry.images.length > 0) {
+                imgHTML = `<div class="journal-image-grid" id="j-grid-${i}">`;
+                entry.images.forEach((_, imgIndex) => {
+                    imgHTML += `<img class="journal-img" id="j-img-${i}-${imgIndex}" src="" alt="Loading...">`;
+                });
+                imgHTML += `</div>`;
+            }
+
+            div.innerHTML = `
+                <div class="journal-entry-header">
+                    <span>${entry.type === 'RP' ? 'Live RP Session' : 'Solo Journal'}</span>
+                    <span>${entry.date}</span>
+                </div>
+                <div class="journal-entry-text">${entry.text}</div>
+                ${imgHTML}
+            `;
+            container.appendChild(div);
+
+            // Fetch and set image URLs asynchronously
+            if (entry.images && entry.images.length > 0) {
+                entry.images.forEach(async (fileId, imgIndex) => {
+                    try {
+                        const url = await getImageUrl(fileId);
+                        const imgEl = document.getElementById(`j-img-${i}-${imgIndex}`);
+                        if (imgEl) imgEl.src = url;
+                    } catch (e) {
+                        console.error("Failed to load image", e);
+                    }
+                });
+            }
+        }
+    }
+
     async function buildHubUI(user) {
         document.getElementById("headerPlayerEmail").textContent = user.email;
 
         calculateLevel();
 
-        // Manage Star Name Permanence
         if (playerJsonData.starName) {
             starNameDisplay.textContent = playerJsonData.starName;
             editStarBtn.classList.add("hidden");
@@ -893,7 +992,6 @@
             }
         }
 
-        // Manage Birth Book completion UI logic
         if (playerJsonData.birthBookCompleted) {
             uploadBtn.classList.remove("hidden"); 
 
@@ -913,13 +1011,13 @@
             editNameContainer.classList.add("hidden");
         }
         
+        renderJournalGallery();
+
         // --- ACTION TAB PROGRESSION LOGIC ---
         const actionsContainer = document.getElementById("actionsContainer");
         actionsContainer.innerHTML = "";
         
         if (!playerJsonData.birthBookCompleted) {
-            
-            // PRE-BIRTH STATE
             let instructions = `
                 <div style="text-align: center; max-width: 600px; margin: 10px auto;">
                     <p style="opacity:0.9; margin-bottom: 25px; line-height: 1.6;">
@@ -933,10 +1031,7 @@
                 </div>
             `;
             actionsContainer.innerHTML = instructions;
-
         } else if (playerJsonData.birthBookCompleted && !playerJsonData.characterName) {
-            
-            // POST-BIRTH (UN-NAMED) STATE
             actionsContainer.innerHTML = `
                 <div style="text-align: center; max-width: 500px; margin: 20px auto;">
                     <p style="opacity:0.9; line-height: 1.6;">
@@ -946,13 +1041,9 @@
                     </p>
                 </div>
             `;
-
         } else {
-            
-            // POST-BIRTH (NAMED) STATE - Dynamic Dropdowns
             let availableActionsHTML = "";
 
-            // Trial Books System
             if (playerJsonData.exp >= 500) {
                 availableActionsHTML += `
                     <details class="hub-dropdown">
@@ -964,7 +1055,6 @@
                 `;
             }
 
-            // Echoes System (Includes School button to trigger modal)
             availableActionsHTML += `
                 <details class="hub-dropdown">
                     <summary>Echoes</summary>
@@ -974,38 +1064,63 @@
                 </details>
             `;
 
-            // Experiences System (Live RP & Writing tracker)
-            availableActionsHTML += `
-                <details class="hub-dropdown">
-                    <summary>Experiences</summary>
-                    <div class="dropdown-content">
-                        <label style="font-weight:bold; color:#7F522B;">Choose a Scene to document your experience:</label>
-                        <select id="sceneSelect" style="width:100%; padding:10px; margin-top:8px; background:#222; color:#fff; border:1px solid #444; font-family:inherit; border-radius:4px;">
-                            <option value="">-- Select Scene --</option>
-                            <option value="library">a. Local Library</option>
-                            <option value="cityhall">b. City Hall</option>
-                            <option value="bakery">c. Bakery</option>
-                            <option value="home">d. Home</option>
-                        </select>
-
-                        <div id="scenePrompt" class="hidden" style="margin-top:15px; padding:15px; background:rgba(255,255,255,0.05); border-left:4px solid #7F522B; font-style:italic;"></div>
-
-                        <div id="sceneAction" class="hidden" style="margin-top:20px;">
-                            <p style="font-size:0.95rem; opacity:0.9; margin-bottom:10px;">
-                                Please describe the experience you had or complete a Roleplay Session (social).<br><br>
-                                <strong>For Solo Writing:</strong> Write an entry of no less than 500 words below. It will be saved as a document to your Hub.<br>
-                                <strong>For Live RP:</strong> Document proof by saving no less than 5 session images to your Gallery tab.
-                            </p>
-                            <textarea id="sceneTextarea" rows="8" style="width:100%; padding:10px; background:#1a1a1a; color:#eee; border:1px solid #444; font-family:inherit; border-radius:4px;" placeholder="Begin your writing entry here..."></textarea>
-                            <button id="saveSceneBtn" style="margin-top:15px; width:100%; border-color:#7F522B; font-weight:bold;">Save Experience</button>
+            const entriesCount = (playerJsonData.journalEntries || []).length;
+            
+            if (entriesCount >= maxJournalEntries) {
+                availableActionsHTML += `
+                    <details class="hub-dropdown">
+                        <summary>Journal (Experiences)</summary>
+                        <div class="dropdown-content" style="text-align:center;">
+                            <p style="color:#7F522B; font-weight:bold;">Max Journal Entries Completed (5/5)</p>
+                            <p style="opacity:0.8; font-size:0.9rem;">You have earned the maximum EXP available from journaling at this stage.</p>
                         </div>
-                    </div>
-                </details>
-            `;
+                    </details>
+                `;
+            } else {
+                availableActionsHTML += `
+                    <details class="hub-dropdown">
+                        <summary>Journal (Experiences)</summary>
+                        <div class="dropdown-content">
+                            <p style="text-align:center; font-weight:bold; color:#7F522B; margin-top:0;">Completed: ${entriesCount} / 5</p>
+                            
+                            <div style="display:flex; justify-content:center; gap:20px; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:15px;">
+                                <label><input type="radio" name="journalType" value="RP"> Live RP</label>
+                                <label><input type="radio" name="journalType" value="Solo"> Solo Writing</label>
+                            </div>
+
+                            <div id="soloWritingOptions" class="hidden">
+                                <label style="font-weight:bold; color:#7F522B;">Choose a Lore Scene:</label>
+                                <select id="sceneSelect" style="width:100%; padding:10px; margin-top:8px; background:#222; color:#fff; border:1px solid #444; font-family:inherit; border-radius:4px;">
+                                    <option value="">-- Select Scene --</option>
+                                    <option value="market">1. The Brass Market</option>
+                                    <option value="library">2. The Steampunk Library</option>
+                                    <option value="train">3. The Steam-Train Platform</option>
+                                    <option value="bakery">4. The Coal-Oven Bakery</option>
+                                    <option value="courtyard">5. The Walled Courtyard</option>
+                                </select>
+                            </div>
+
+                            <div id="journalPrompt" class="hidden" style="margin-top:15px; padding:15px; background:rgba(255,255,255,0.05); border-left:4px solid #7F522B; font-style:italic;"></div>
+
+                            <div id="journalAction" class="hidden" style="margin-top:20px;">
+                                <div id="journalInstructions" style="font-size:0.9rem; opacity:0.9; margin-bottom:15px;"></div>
+                                
+                                <textarea id="journalTextarea" rows="8" style="width:100%; padding:10px; background:#1a1a1a; color:#eee; border:1px solid #444; font-family:inherit; border-radius:4px;" placeholder="Write your first-person journal entry here..."></textarea>
+                                
+                                <div style="margin-top:15px;">
+                                    <label style="font-weight:bold; font-size:0.9rem; color:#7F522B;">Attach Images:</label>
+                                    <input type="file" id="journalImagesInput" accept="image/*" multiple style="width:100%; margin-top:5px;">
+                                </div>
+
+                                <button id="saveJournalBtn" style="margin-top:20px; width:100%; border-color:#7F522B; font-weight:bold;">Save Journal Entry (+10 EXP)</button>
+                            </div>
+                        </div>
+                    </details>
+                `;
+            }
 
             actionsContainer.innerHTML = availableActionsHTML;
             
-            // Attach event listeners for the dynamically created buttons inside the Hub
             const openSchoolBtn = document.getElementById("openSchoolBtn");
             if(openSchoolBtn) {
                 openSchoolBtn.addEventListener("click", () => {
@@ -1018,42 +1133,121 @@
                 });
             }
 
-            // Experiences Dropdown Logic
-            const sceneSelect = document.getElementById("sceneSelect");
-            const scenePrompt = document.getElementById("scenePrompt");
-            const sceneAction = document.getElementById("sceneAction");
-            const saveSceneBtn = document.getElementById("saveSceneBtn");
+            if (entriesCount < maxJournalEntries) {
+                const journalRadios = document.querySelectorAll('input[name="journalType"]');
+                const soloWritingOptions = document.getElementById("soloWritingOptions");
+                const sceneSelect = document.getElementById("sceneSelect");
+                const journalPrompt = document.getElementById("journalPrompt");
+                const journalAction = document.getElementById("journalAction");
+                const journalInstructions = document.getElementById("journalInstructions");
+                const saveJournalBtn = document.getElementById("saveJournalBtn");
+                const journalTextarea = document.getElementById("journalTextarea");
+                const journalImagesInput = document.getElementById("journalImagesInput");
 
-            const prompts = {
-                "library": "Another trip to the local library leaves you with mixed feelings...",
-                "cityhall": "The towering architecture of City Hall looms above, echoing with the sounds of shifting politics...",
-                "bakery": "The scent of fresh bread and warm sugar draws you to the local bakery window...",
-                "home": "Returning home, the familiar walls offer a quiet moment of reflection..."
-            };
+                const soloPrompts = {
+                    "market": "Walking closely with your guardian, humans brush past without looking down, their eyes sliding off you like water. You feel a warm hum of your unique energy, but why do they pretend you aren't there?",
+                    "library": "Sitting in the grand reading room while your guardian watches over you. A human clerk walks by, totally ignoring your polite greeting. Your inner energy flickers in response to the cold shoulder.",
+                    "train": "Waiting on the platform, holding your guardian's hand tightly. Human children play nearby, but you notice their parents quickly and quietly pull them away from you.",
+                    "bakery": "The baker hands your guardian the pastries, refusing to acknowledge your existence or look at your face, leaving you to wonder what makes your energy so different.",
+                    "courtyard": "Confined to the safety of your home's courtyard. You can hear the human world outside the iron gates—a world you aren't allowed to enter alone because of the strict new laws."
+                };
 
-            if(sceneSelect) {
+                let currentMode = "";
+
+                journalRadios.forEach(radio => {
+                    radio.addEventListener("change", (e) => {
+                        currentMode = e.target.value;
+                        if (currentMode === "RP") {
+                            soloWritingOptions.classList.add("hidden");
+                            journalPrompt.classList.remove("hidden");
+                            journalPrompt.innerHTML = `<strong>Live RP Session</strong><br>Document your social RP in the Steampunk Realm. Remember, as a Fae child, you are often ignored by humans and hidden from the world's horrors.`;
+                            
+                            journalInstructions.innerHTML = `
+                                <strong>Requirements:</strong><br>
+                                • First-person journal entry (Min 300 words).<br>
+                                • Attach 5 to 10 session images.<br>
+                                • Images MUST show: (A) Your character's name in a sentence, (B) Your RP partner's name in a sentence, and (C) The word "Stars" in generalized conversation.
+                            `;
+                            journalAction.classList.remove("hidden");
+                        } else if (currentMode === "Solo") {
+                            soloWritingOptions.classList.remove("hidden");
+                            journalPrompt.classList.add("hidden");
+                            journalAction.classList.add("hidden");
+                            sceneSelect.value = "";
+                        }
+                    });
+                });
+
                 sceneSelect.addEventListener("change", (e) => {
                     const val = e.target.value;
-                    if(val && prompts[val]) {
-                        scenePrompt.textContent = prompts[val];
-                        scenePrompt.classList.remove("hidden");
-                        sceneAction.classList.remove("hidden");
+                    if(val && soloPrompts[val]) {
+                        journalPrompt.innerHTML = soloPrompts[val];
+                        journalPrompt.classList.remove("hidden");
+                        
+                        journalInstructions.innerHTML = `
+                            <strong>Requirements:</strong><br>
+                            • First-person journal entry (Min 500 words).<br>
+                            • Attach 1 to 3 images from your device.
+                        `;
+                        journalAction.classList.remove("hidden");
                     } else {
-                        scenePrompt.classList.add("hidden");
-                        sceneAction.classList.add("hidden");
+                        journalPrompt.classList.add("hidden");
+                        journalAction.classList.add("hidden");
                     }
                 });
-            }
 
-            if(saveSceneBtn) {
-                saveSceneBtn.addEventListener("click", () => {
-                    alert("Experience Save logic will be connected next.");
+                saveJournalBtn.addEventListener("click", async () => {
+                    const text = journalTextarea.value.trim();
+                    const words = text.split(/\s+/).filter(w => w.length > 0).length;
+                    const files = journalImagesInput.files;
+                    
+                    if (currentMode === "RP") {
+                        if (words < 300) return alert(`Your entry is ${words} words. A minimum of 300 words is required for Live RP.`);
+                        if (files.length < 5 || files.length > 10) return alert(`You selected ${files.length} images. You must upload between 5 and 10 images for Live RP.`);
+                    } else if (currentMode === "Solo") {
+                        if (words < 500) return alert(`Your entry is ${words} words. A minimum of 500 words is required for Solo Writing.`);
+                        if (files.length < 1 || files.length > 3) return alert(`You selected ${files.length} images. You must upload between 1 and 3 images for Solo Writing.`);
+                    } else {
+                        return;
+                    }
+
+                    showLoading("Saving journal entry and uploading images. Please wait...");
+                    
+                    try {
+                        const imageFileIds = [];
+                        for (let i = 0; i < files.length; i++) {
+                            const fId = await uploadImageToDrive(files[i]);
+                            imageFileIds.push(fId);
+                        }
+
+                        const newEntry = {
+                            date: new Date().toLocaleString(),
+                            type: currentMode,
+                            text: text,
+                            images: imageFileIds
+                        };
+
+                        playerJsonData.journalEntries.push(newEntry);
+                        playerJsonData.exp = (playerJsonData.exp || 0) + 10;
+                        
+                        await saveDriveAppData();
+                        
+                        hideLoading();
+                        await buildHubUI(auth.currentUser);
+                        alert("Journal entry saved! +10 EXP awarded.");
+                        
+                    } catch (err) {
+                        console.error(err);
+                        hideLoading();
+                        alert("Failed to save journal entry. Check console for details.");
+                    }
                 });
             }
         }
     }
 
     async function handleUserReady(user) {
+        showLoading("Syncing profile data...");
         await getDriveAppData();
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -1061,7 +1255,6 @@
         const urlBloodlineCourt = urlParams.get('bloodlineCourt');
         let dataChanged = false;
 
-        // Completes the Birth Book if URL params are present
         if (urlBirthCourt && urlBloodlineCourt) {
             playerJsonData.birthCourt = urlBirthCourt;
             playerJsonData.bloodlineCourt = urlBloodlineCourt;
@@ -1070,9 +1263,9 @@
             window.history.replaceState({}, document.title, window.location.pathname);
         }
 
-        // ONE-TIME 50 EXP REWARD
-        if (playerJsonData.birthBookCompleted && !playerJsonData.birthBookExpAwarded) {
-            playerJsonData.exp = (playerJsonData.exp || 0) + 50;
+        // Bug Fix: Catch characters who completed birth book but didn't get their 50 EXP
+        if (playerJsonData.birthBookCompleted && (playerJsonData.exp || 0) < 50) {
+            playerJsonData.exp = 50;
             playerJsonData.birthBookExpAwarded = true; 
             dataChanged = true;
         }
@@ -1084,9 +1277,7 @@
         }
 
         await buildHubUI(user);
-        
-        loadingScreen.classList.add("hidden");
-        playerScreen.classList.remove("hidden");
+        hideLoading();
     }
 
     // --- EVENT LISTENERS ---
@@ -1094,7 +1285,6 @@
     onAuthStateChanged(auth, async (user) => {
         if (user && gDriveToken) {
             loginScreen.classList.add("hidden");
-            loadingScreen.classList.remove("hidden");
             try {
                 await handleUserReady(user);
             } catch (error) {
@@ -1108,7 +1298,7 @@
 
     document.getElementById("googleSignInButton").addEventListener("click", async () => {
         loginScreen.classList.add("hidden");
-        loadingScreen.classList.remove("hidden");
+        showLoading("Signing in...");
 
         try {
             const result = await signInWithPopup(auth, provider);
@@ -1139,27 +1329,29 @@
     saveStarBtn.addEventListener("click", async () => {
         const val = editStarInput.value.trim();
         if (val) {
+            showLoading("Saving...");
             playerJsonData.starName = val;
             starNameDisplay.textContent = val;
             editStarContainer.classList.add("hidden");
             editStarBtn.classList.add("hidden");
             await saveDriveAppData();
-            
             await buildHubUI(auth.currentUser);
+            hideLoading();
         }
     });
 
     saveNameBtn.addEventListener("click", async () => {
         const val = editNameInput.value.trim();
         if (val) {
+            showLoading("Saving...");
             playerJsonData.characterName = val;
             uiName.textContent = val;
             uiName.classList.remove("hidden");
             editNameContainer.classList.add("hidden");
             gen1NameDisplay.textContent = `${val} - Steampunk`;
             await saveDriveAppData();
-            
             await buildHubUI(auth.currentUser);
+            hideLoading();
         }
     });
 
