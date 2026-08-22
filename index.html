@@ -414,16 +414,15 @@
         .journal-entry-text {
             white-space: pre-wrap;
             line-height: 1.6;
-            margin-bottom: 15px;
         }
         .journal-image-grid {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 15px;
         }
         .journal-img {
-            width: 150px;
-            height: 150px;
+            width: 200px;
+            height: 200px;
             object-fit: cover;
             border: 1px solid #444;
             border-radius: 4px;
@@ -490,7 +489,8 @@
             <button class="tab-btn active" data-target="tab-character">Character Card</button>
             <button class="tab-btn" data-target="tab-available">Available</button>
             <button class="tab-btn" data-target="tab-inventory">Inventory</button>
-            <button class="tab-btn" data-target="tab-journal">Journal & Gallery</button>
+            <button class="tab-btn" data-target="tab-journal">Journal</button>
+            <button class="tab-btn" data-target="tab-gallery">Gallery</button>
             <button class="tab-btn" data-target="tab-members" id="tab-members-btn">Members</button>
         </div>
 
@@ -559,11 +559,28 @@
             <p style="text-align:center; opacity:0.7;">Inventory features coming soon.</p>
         </div>
 
-        <!-- JOURNAL & GALLERY TAB -->
+        <!-- JOURNAL TAB -->
         <div id="tab-journal" class="hub-section">
-            <h2 style="text-align:center; margin-top:40px;">Journal & Gallery</h2>
+            <h2 style="text-align:center; margin-top:40px;">Journal</h2>
             <div id="journalEntriesContainer" style="margin-top:20px;">
                 <p style="text-align:center; opacity:0.7;">No journal entries yet.</p>
+            </div>
+        </div>
+
+        <!-- GALLERY TAB -->
+        <div id="tab-gallery" class="hub-section">
+            <h2 style="text-align:center; margin-top:40px;">Gallery</h2>
+            
+            <div id="galleryBirthBookContainer" style="margin-bottom: 30px; text-align: center;">
+                <h3 style="color:#7F522B; border-bottom:1px solid #333; padding-bottom:5px; margin-bottom: 15px;">Birth Book Result</h3>
+                <div id="birthBookImageWrapper" style="opacity:0.7;">Checking for result...</div>
+            </div>
+            
+            <div id="galleryRPContainer" style="text-align: center;">
+                <h3 style="color:#7F522B; border-bottom:1px solid #333; padding-bottom:5px; margin-bottom: 15px;">Experience Archives</h3>
+                <div id="galleryImagesGrid" class="journal-image-grid" style="justify-content: center;">
+                    <p style="text-align:center; opacity:0.7; width:100%;">No uploaded images yet.</p>
+                </div>
             </div>
         </div>
 
@@ -817,7 +834,8 @@
                 escapeCompleted: false,
                 exp: 0,
                 level: 1,
-                portraitId: ""
+                portraitId: "",
+                birthBookImageId: ""
             };
             await saveDriveAppData();
         }
@@ -900,52 +918,72 @@
         playerJsonData.level = lvl;
     }
 
-    async function renderJournalGallery() {
-        const container = document.getElementById("journalEntriesContainer");
+    async function renderJournalAndGallery() {
+        const journalContainer = document.getElementById("journalEntriesContainer");
+        const galleryGrid = document.getElementById("galleryImagesGrid");
+        const birthBookWrapper = document.getElementById("birthBookImageWrapper");
+        
         const entries = playerJsonData.journalEntries || [];
         
+        // Render Birth Book Image placeholder
+        if (playerJsonData.birthBookImageId) {
+            birthBookWrapper.innerHTML = `<img id="bb-result-img" class="journal-img" src="" alt="Birth Book Result" style="width:250px; height:auto;">`;
+            try {
+                const url = await getImageUrl(playerJsonData.birthBookImageId);
+                const bbImgEl = document.getElementById("bb-result-img");
+                if (bbImgEl) bbImgEl.src = url;
+            } catch (e) {
+                console.error("Failed to load Birth Book image", e);
+                birthBookWrapper.innerHTML = `<p style="font-size:0.9rem; color:#ffb0b0;">Failed to load Birth Book image.</p>`;
+            }
+        } else {
+            birthBookWrapper.innerHTML = `<p style="font-size:0.9rem; opacity: 0.7;">No Birth Book result image found.</p>`;
+        }
+
         if (entries.length === 0) {
-            container.innerHTML = `<p style="text-align:center; opacity:0.7;">No journal entries yet.</p>`;
+            journalContainer.innerHTML = `<p style="text-align:center; opacity:0.7;">No journal entries yet.</p>`;
+            galleryGrid.innerHTML = `<p style="text-align:center; opacity:0.7; width:100%;">No uploaded images yet.</p>`;
             return;
         }
 
-        container.innerHTML = "";
+        journalContainer.innerHTML = "";
+        galleryGrid.innerHTML = "";
+
         for (let i = entries.length - 1; i >= 0; i--) {
             const entry = entries[i];
+            
+            // Build Journal Text Entry
             const div = document.createElement("div");
             div.className = "journal-entry";
-            
-            let imgHTML = "";
-            if (entry.images && entry.images.length > 0) {
-                imgHTML = `<div class="journal-image-grid" id="j-grid-${i}">`;
-                entry.images.forEach((_, imgIndex) => {
-                    imgHTML += `<img class="journal-img" id="j-img-${i}-${imgIndex}" src="" alt="Loading...">`;
-                });
-                imgHTML += `</div>`;
-            }
-
             div.innerHTML = `
                 <div class="journal-entry-header">
                     <span>${entry.type === 'RP' ? 'Live RP Session' : 'Solo Journal'}</span>
                     <span>${entry.date}</span>
                 </div>
                 <div class="journal-entry-text">${entry.text}</div>
-                ${imgHTML}
             `;
-            container.appendChild(div);
+            journalContainer.appendChild(div);
 
-            // Fetch and set image URLs asynchronously
+            // Build Gallery Images
             if (entry.images && entry.images.length > 0) {
                 entry.images.forEach(async (fileId, imgIndex) => {
+                    const imgWrapper = document.createElement("div");
+                    imgWrapper.innerHTML = `<img class="journal-img" id="g-img-${i}-${imgIndex}" src="" alt="Loading...">`;
+                    galleryGrid.appendChild(imgWrapper.firstElementChild);
+                    
                     try {
                         const url = await getImageUrl(fileId);
-                        const imgEl = document.getElementById(`j-img-${i}-${imgIndex}`);
+                        const imgEl = document.getElementById(`g-img-${i}-${imgIndex}`);
                         if (imgEl) imgEl.src = url;
                     } catch (e) {
-                        console.error("Failed to load image", e);
+                        console.error("Failed to load gallery image", e);
                     }
                 });
             }
+        }
+        
+        if (galleryGrid.innerHTML === "") {
+            galleryGrid.innerHTML = `<p style="text-align:center; opacity:0.7; width:100%;">No uploaded images yet.</p>`;
         }
     }
 
@@ -1011,7 +1049,7 @@
             editNameContainer.classList.add("hidden");
         }
         
-        renderJournalGallery();
+        renderJournalAndGallery();
 
         // --- ACTION TAB PROGRESSION LOGIC ---
         const actionsContainer = document.getElementById("actionsContainer");
@@ -1263,7 +1301,6 @@
             window.history.replaceState({}, document.title, window.location.pathname);
         }
 
-        // Bug Fix: Catch characters who completed birth book but didn't get their 50 EXP
         if (playerJsonData.birthBookCompleted && (playerJsonData.exp || 0) < 50) {
             playerJsonData.exp = 50;
             playerJsonData.birthBookExpAwarded = true; 
