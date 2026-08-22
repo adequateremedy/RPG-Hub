@@ -415,17 +415,60 @@
             white-space: pre-wrap;
             line-height: 1.6;
         }
-        .journal-image-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
+        .gallery-list {
+            list-style: none;
+            padding: 0;
+            text-align: left;
+            max-width: 500px;
+            margin: 0 auto;
         }
-        .journal-img {
-            width: 200px;
-            height: 200px;
-            object-fit: cover;
-            border: 1px solid #444;
-            border-radius: 4px;
+        .gallery-item {
+            padding: 12px 15px;
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            color: #e3d2b9;
+            font-size: 1.05rem;
+            transition: background 0.2s;
+        }
+        .gallery-item:hover {
+            background: #222;
+        }
+
+        /* LIGHTBOX MODAL */
+        .lightbox-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 200;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .lightbox-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+            text-align: center;
+        }
+        .lightbox-img {
+            max-width: 100%;
+            max-height: 85vh;
+            object-fit: contain;
+            border: 1px solid #7F522B;
+            border-radius: 6px;
+        }
+        .lightbox-close {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 2rem;
+            cursor: pointer;
         }
 
     </style>
@@ -570,17 +613,10 @@
         <!-- GALLERY TAB -->
         <div id="tab-gallery" class="hub-section">
             <h2 style="text-align:center; margin-top:40px;">Gallery</h2>
-            
-            <div id="galleryBirthBookContainer" style="margin-bottom: 30px; text-align: center;">
-                <h3 style="color:#7F522B; border-bottom:1px solid #333; padding-bottom:5px; margin-bottom: 15px;">Birth Book Result</h3>
-                <div id="birthBookImageWrapper" style="opacity:0.7;">Checking for result...</div>
-            </div>
-            
-            <div id="galleryRPContainer" style="text-align: center;">
-                <h3 style="color:#7F522B; border-bottom:1px solid #333; padding-bottom:5px; margin-bottom: 15px;">Experience Archives</h3>
-                <div id="galleryImagesGrid" class="journal-image-grid" style="justify-content: center;">
-                    <p style="text-align:center; opacity:0.7; width:100%;">No uploaded images yet.</p>
-                </div>
+            <div style="max-width: 500px; margin: 0 auto; text-align: left;">
+                <ul id="galleryListContainer" class="gallery-list">
+                    <p style="text-align:center; opacity:0.7;">No gallery images found.</p>
+                </ul>
             </div>
         </div>
 
@@ -621,6 +657,14 @@
             <li><span id="chk-class5">[ ]</span> Class 5: Gearcraft Basics (Ages 10-11)</li>
         </ul>
         <button id="closeSchoolBtn" style="width:100%;">Close</button>
+    </div>
+</div>
+
+<!-- LIGHTBOX MODAL -->
+<div id="lightboxModal" class="lightbox-overlay hidden">
+    <div class="lightbox-content">
+        <button id="lightboxCloseBtn" class="lightbox-close">&times;</button>
+        <img id="lightboxImg" class="lightbox-img" src="" alt="Enlarged View">
     </div>
 </div>
 
@@ -680,6 +724,10 @@
 
     const schoolModal = document.getElementById("schoolModal");
     const closeSchoolBtn = document.getElementById("closeSchoolBtn");
+
+    const lightboxModal = document.getElementById("lightboxModal");
+    const lightboxImg = document.getElementById("lightboxImg");
+    const lightboxCloseBtn = document.getElementById("lightboxCloseBtn");
 
     const elementsToUpdate = {
         "ui-lvl": "level",
@@ -920,32 +968,66 @@
 
     async function renderJournalAndGallery() {
         const journalContainer = document.getElementById("journalEntriesContainer");
-        const galleryGrid = document.getElementById("galleryImagesGrid");
-        const birthBookWrapper = document.getElementById("birthBookImageWrapper");
+        const galleryListContainer = document.getElementById("galleryListContainer");
         
         const entries = playerJsonData.journalEntries || [];
-        
-        // Render Birth Book Image placeholder using the live URL from the BirthBook repo
+        galleryListContainer.innerHTML = "";
+
+        // 1. Add Birth Book Result to Gallery List if completed
         if (playerJsonData.birthCourt) {
             const bbImageUrl = `https://adequateremedy.github.io/BirthBook/assets/${playerJsonData.birthCourt}-Result.png`;
-            birthBookWrapper.innerHTML = `<img id="bb-result-img" class="journal-img" src="${bbImageUrl}" alt="${playerJsonData.birthCourt} Birth Book Result" style="width:250px; height:auto; object-fit:contain; border:none;">`;
-        } else {
-            birthBookWrapper.innerHTML = `<p style="font-size:0.9rem; opacity: 0.7;">No Birth Book result image found.</p>`;
+            const li = document.createElement("li");
+            li.className = "gallery-item";
+            li.textContent = `Birth Book - ${playerJsonData.birthCourt} Court`;
+            li.addEventListener("click", () => {
+                lightboxImg.src = bbImageUrl;
+                lightboxModal.classList.remove("hidden");
+            });
+            galleryListContainer.appendChild(li);
         }
 
+        // 2. Add all Experience / Journal images to the same flat list
+        let hasImages = !!playerJsonData.birthCourt;
+        if (entries.length > 0) {
+            for (let i = 0; i < entries.length; i++) {
+                const entry = entries[i];
+                if (entry.images && entry.images.length > 0) {
+                    hasImages = true;
+                    entry.images.forEach(async (fileId, imgIndex) => {
+                        const labelName = `${entry.type === 'RP' ? 'Live RP Session' : 'Solo Journal'} (${entry.date}) — Image ${imgIndex + 1}`;
+                        const li = document.createElement("li");
+                        li.className = "gallery-item";
+                        li.textContent = labelName;
+                        
+                        // Fetch URL and attach click listener
+                        try {
+                            const url = await getImageUrl(fileId);
+                            li.addEventListener("click", () => {
+                                lightboxImg.src = url;
+                                lightboxModal.classList.remove("hidden");
+                            });
+                        } catch (e) {
+                            console.error("Failed to load image URL for gallery", e);
+                        }
+                        galleryListContainer.appendChild(li);
+                    });
+                }
+            }
+        }
+
+        if (!hasImages) {
+            galleryListContainer.innerHTML = `<p style="text-align:center; opacity:0.7;">No gallery images found.</p>`;
+        }
+
+        // Render Journal Text Entries
         if (entries.length === 0) {
             journalContainer.innerHTML = `<p style="text-align:center; opacity:0.7;">No journal entries yet.</p>`;
-            galleryGrid.innerHTML = `<p style="text-align:center; opacity:0.7; width:100%;">No uploaded images yet.</p>`;
             return;
         }
 
         journalContainer.innerHTML = "";
-        galleryGrid.innerHTML = "";
-
         for (let i = entries.length - 1; i >= 0; i--) {
             const entry = entries[i];
-            
-            // Build Journal Text Entry
             const div = document.createElement("div");
             div.className = "journal-entry";
             div.innerHTML = `
@@ -956,27 +1038,6 @@
                 <div class="journal-entry-text">${entry.text}</div>
             `;
             journalContainer.appendChild(div);
-
-            // Build Gallery Images
-            if (entry.images && entry.images.length > 0) {
-                entry.images.forEach(async (fileId, imgIndex) => {
-                    const imgWrapper = document.createElement("div");
-                    imgWrapper.innerHTML = `<img class="journal-img" id="g-img-${i}-${imgIndex}" src="" alt="Loading...">`;
-                    galleryGrid.appendChild(imgWrapper.firstElementChild);
-                    
-                    try {
-                        const url = await getImageUrl(fileId);
-                        const imgEl = document.getElementById(`g-img-${i}-${imgIndex}`);
-                        if (imgEl) imgEl.src = url;
-                    } catch (e) {
-                        console.error("Failed to load gallery image", e);
-                    }
-                });
-            }
-        }
-        
-        if (galleryGrid.innerHTML === "") {
-            galleryGrid.innerHTML = `<p style="text-align:center; opacity:0.7; width:100%;">No uploaded images yet.</p>`;
         }
     }
 
@@ -1457,6 +1518,17 @@
 
     closeSchoolBtn.addEventListener("click", () => {
         schoolModal.classList.add("hidden");
+    });
+
+    // Lightbox close handlers
+    lightboxCloseBtn.addEventListener("click", () => {
+        lightboxModal.classList.add("hidden");
+    });
+
+    lightboxModal.addEventListener("click", (e) => {
+        if (e.target === lightboxModal) {
+            lightboxModal.classList.add("hidden");
+        }
     });
 
 </script>
