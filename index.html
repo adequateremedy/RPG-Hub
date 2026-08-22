@@ -835,8 +835,7 @@
                 escapeCompleted: false,
                 exp: 0,
                 level: 1,
-                portraitId: "",
-                birthBookImageId: ""
+                portraitId: ""
             };
             await saveDriveAppData();
         }
@@ -926,17 +925,10 @@
         
         const entries = playerJsonData.journalEntries || [];
         
-        // Render Birth Book Image placeholder
-        if (playerJsonData.birthBookImageId) {
-            birthBookWrapper.innerHTML = `<img id="bb-result-img" class="journal-img" src="" alt="Birth Book Result" style="width:250px; height:auto;">`;
-            try {
-                const url = await getImageUrl(playerJsonData.birthBookImageId);
-                const bbImgEl = document.getElementById("bb-result-img");
-                if (bbImgEl) bbImgEl.src = url;
-            } catch (e) {
-                console.error("Failed to load Birth Book image", e);
-                birthBookWrapper.innerHTML = `<p style="font-size:0.9rem; color:#ffb0b0;">Failed to load Birth Book image.</p>`;
-            }
+        // Render Birth Book Image placeholder using the live URL from the BirthBook repo
+        if (playerJsonData.birthCourt) {
+            const bbImageUrl = `https://adequateremedy.github.io/BirthBook/assets/${playerJsonData.birthCourt}-Result.png`;
+            birthBookWrapper.innerHTML = `<img id="bb-result-img" class="journal-img" src="${bbImageUrl}" alt="${playerJsonData.birthCourt} Birth Book Result" style="width:250px; height:auto; object-fit:contain; border:none;">`;
         } else {
             birthBookWrapper.innerHTML = `<p style="font-size:0.9rem; opacity: 0.7;">No Birth Book result image found.</p>`;
         }
