@@ -655,6 +655,7 @@
     let gDriveToken = sessionStorage.getItem("gDriveToken") || null;
     let dataFileId = null;
     let playerJsonData = {};
+    let queuedJournalImages = [];
     const maxJournalEntries = 5;
 
     // DOM Elements
@@ -1146,8 +1147,12 @@
                                 <textarea id="journalTextarea" rows="8" style="width:100%; padding:10px; background:#1a1a1a; color:#eee; border:1px solid #444; font-family:inherit; border-radius:4px;" placeholder="Write your first-person journal entry here..."></textarea>
                                 
                                 <div style="margin-top:15px;">
-                                    <label style="font-weight:bold; font-size:0.9rem; color:#7F522B;">Attach Images:</label>
+                                    <label style="font-weight:bold; font-size:0.9rem; color:#7F522B;">Attach Images (Select one by one or multiple at once):</label>
                                     <input type="file" id="journalImagesInput" accept="image/*" multiple style="width:100%; margin-top:5px;">
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
+                                        <span id="journalImageCount" style="font-size:0.85rem; color:#aaa;">0 images attached</span>
+                                        <button id="clearImagesBtn" type="button" class="hidden" style="padding:4px 8px; font-size:0.8rem;">Clear Selected</button>
+                                    </div>
                                 </div>
 
                                 <button id="saveJournalBtn" style="margin-top:20px; width:100%; border-color:#7F522B; font-weight:bold;">Save Journal Entry (+10 EXP)</button>
@@ -1181,6 +1186,8 @@
                 const saveJournalBtn = document.getElementById("saveJournalBtn");
                 const journalTextarea = document.getElementById("journalTextarea");
                 const journalImagesInput = document.getElementById("journalImagesInput");
+                const journalImageCount = document.getElementById("journalImageCount");
+                const clearImagesBtn = document.getElementById("clearImagesBtn");
 
                 const soloPrompts = {
                     "market": "Walking closely with your guardian, humans brush past without looking down, their eyes sliding off you like water. You feel a warm hum of your unique energy, but why do they pretend you aren't there?",
@@ -1195,6 +1202,11 @@
                 journalRadios.forEach(radio => {
                     radio.addEventListener("change", (e) => {
                         currentMode = e.target.value;
+                        queuedJournalImages = [];
+                        if(journalImageCount) journalImageCount.textContent = "0 images attached";
+                        if(clearImagesBtn) clearImagesBtn.classList.add("hidden");
+                        if(journalImagesInput) journalImagesInput.value = "";
+
                         if (currentMode === "RP") {
                             soloWritingOptions.classList.add("hidden");
                             journalPrompt.classList.remove("hidden");
@@ -1234,10 +1246,29 @@
                     }
                 });
 
+                journalImagesInput.addEventListener("change", (e) => {
+                    if (e.target.files) {
+                        for (let i = 0; i < e.target.files.length; i++) {
+                            queuedJournalImages.push(e.target.files[i]);
+                        }
+                        journalImageCount.textContent = `${queuedJournalImages.length} images attached`;
+                        if (queuedJournalImages.length > 0) {
+                            clearImagesBtn.classList.remove("hidden");
+                        }
+                        journalImagesInput.value = "";
+                    }
+                });
+
+                clearImagesBtn.addEventListener("click", () => {
+                    queuedJournalImages = [];
+                    journalImageCount.textContent = "0 images attached";
+                    clearImagesBtn.classList.add("hidden");
+                });
+
                 saveJournalBtn.addEventListener("click", async () => {
                     const text = journalTextarea.value.trim();
                     const words = text.split(/\s+/).filter(w => w.length > 0).length;
-                    const files = journalImagesInput.files;
+                    const files = queuedJournalImages;
                     
                     if (currentMode === "RP") {
                         if (words < 300) return alert(`Your entry is ${words} words. A minimum of 300 words is required for Live RP.`);
@@ -1267,6 +1298,7 @@
 
                         playerJsonData.journalEntries.push(newEntry);
                         playerJsonData.exp = (playerJsonData.exp || 0) + 10;
+                        queuedJournalImages = []; 
                         
                         await saveDriveAppData();
                         
