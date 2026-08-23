@@ -54,6 +54,9 @@ const uploadBtn = document.getElementById("ui-portrait-upload-btn");
 const schoolModal = document.getElementById("schoolModal");
 const closeSchoolBtn = document.getElementById("closeSchoolBtn");
 
+const itemModal = document.getElementById("itemModal");
+const closeItemModalBtn = document.getElementById("closeItemModalBtn");
+
 const lightboxModal = document.getElementById("lightboxModal");
 const lightboxImg = document.getElementById("lightboxImg");
 const lightboxCloseBtn = document.getElementById("lightboxCloseBtn");
@@ -204,6 +207,7 @@ async function getDriveAppData() {
             birthBookExpAwarded: false, 
             schoolProgress: { class1: false, class2: false, class3: false, class4: false, class5: false },
             journalEntries: [],
+            inventory: [],
             comingOfAgeUnlocked: false,
             comingOfAgeCompleted: false,
             traumaUnlocked: false,
@@ -293,6 +297,50 @@ function calculateLevel() {
     if (playerJsonData.traumaCompleted) lvl = 3;
     if (playerJsonData.escapeCompleted) lvl = 4;
     playerJsonData.level = lvl;
+}
+
+async function renderInventory() {
+    const inventoryGrid = document.getElementById("inventoryGrid");
+    const items = playerJsonData.inventory || [];
+    
+    if (items.length === 0) {
+        inventoryGrid.innerHTML = `<p style="text-align:center; opacity:0.7; grid-column: 1 / -1;">Your inventory is empty.</p>`;
+        return;
+    }
+
+    inventoryGrid.innerHTML = "";
+    
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const div = document.createElement("div");
+        div.className = "inventory-item";
+        
+        let imgUrl = "";
+        try {
+            if (item.imageId) {
+                imgUrl = await getImageUrl(item.imageId);
+            } else if (item.image) {
+                imgUrl = item.image;
+            }
+        } catch(e) {
+            console.error("Failed to load inventory image", e);
+        }
+
+        div.innerHTML = `
+            <img src="${imgUrl}" alt="${item.name}">
+            <span>${item.name}</span>
+        `;
+        
+        div.addEventListener("click", () => {
+            document.getElementById("itemModalName").textContent = item.name;
+            document.getElementById("itemModalCategory").textContent = item.category || "Item";
+            document.getElementById("itemModalImg").src = imgUrl;
+            document.getElementById("itemModalDesc").textContent = item.desc || "Item description goes here.";
+            document.getElementById("itemModal").classList.remove("hidden");
+        });
+        
+        inventoryGrid.appendChild(div);
+    }
 }
 
 async function renderJournalAndGallery() {
@@ -432,6 +480,7 @@ async function buildHubUI(user) {
         editNameContainer.classList.add("hidden");
     }
     
+    renderInventory();
     renderJournalAndGallery();
 
     // --- ACTION TAB PROGRESSION LOGIC ---
@@ -567,7 +616,6 @@ async function buildHubUI(user) {
                 
                 document.getElementById("chk-class1").textContent = c1 ? "[X]" : "[ ]";
                 
-                // Temporarily allowing Class 1 to remain a link so it can be replayed and tested.
                 document.getElementById("name-class1").innerHTML = `<a href="https://adequateremedy.github.io/Runic-Fally/" style="color: #e3d2b9; text-decoration: underline;">Runic-Fally</a>`;
 
                 document.getElementById("chk-class2").textContent = playerJsonData.schoolProgress.class2 ? "[X]" : "[ ]";
@@ -855,6 +903,10 @@ closeSchoolBtn.addEventListener("click", () => {
     schoolModal.classList.add("hidden");
 });
 
+closeItemModalBtn.addEventListener("click", () => {
+    itemModal.classList.add("hidden");
+});
+
 // Lightbox close handlers
 lightboxCloseBtn.addEventListener("click", () => {
     lightboxModal.classList.add("hidden");
@@ -863,5 +915,11 @@ lightboxCloseBtn.addEventListener("click", () => {
 lightboxModal.addEventListener("click", (e) => {
     if (e.target === lightboxModal) {
         lightboxModal.classList.add("hidden");
+    }
+});
+
+itemModal.addEventListener("click", (e) => {
+    if (e.target === itemModal) {
+        itemModal.classList.add("hidden");
     }
 });
