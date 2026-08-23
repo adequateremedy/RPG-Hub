@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Solus Dynasty RPG — Hub</title>
-    <link rel="stylesheet" href="css/hub.css?v=16">
+    <link rel="stylesheet" href="css/hub.css?v=17">
 </head>
 <body>
 
@@ -158,6 +158,7 @@
         <!-- MEMBERS TAB -->
         <div id="tab-members" class="hub-section">
             <h2 style="text-align:center; margin-top:20px; color:#e3d2b9;">Top 50 Members</h2>
+            <p style="text-align:center; font-size: 0.85rem; opacity: 0.8; margin-top:-10px; margin-bottom: 20px;">(Click a member's name to view their Character Card)</p>
             <table class="members-table">
                 <thead>
                     <tr>
@@ -178,6 +179,53 @@
 
     </section>
 
+</div>
+
+<!-- PUBLIC MEMBER CARD MODAL -->
+<div id="memberCardModal" class="modal-overlay hidden">
+    <div class="modal-box" style="padding: 0; background: transparent; border: none; box-shadow: none;">
+        <div class="card-container" style="margin: 0 auto; position: relative;">
+            <button id="closeMemberCardBtn" class="lightbox-close" style="top: -15px; right: -15px; z-index: 10; border-radius: 50%; width: 35px; height: 35px; font-size: 1.5rem; line-height: 1;">&times;</button>
+            
+            <div id="member-portrait-container" style="width: 170px; height: 170px; margin: 25px auto 10px auto; border-radius: 50%; overflow: hidden; border: 3px solid #7F522B;">
+                <img id="member-portrait-img" src="" alt="Portrait" style="width: 100%; height: 100%; object-fit: cover;">
+            </div>
+
+            <div id="member-name" class="abs-stat" style="position: static; transform: none; margin: 15px auto 25px auto; font-size: 1.8rem; text-align: center; letter-spacing: 2px;">Name</div>
+            
+            <div style="position: absolute; top: 15px; right: 15px;">
+                <div class="lvl-label" style="text-align: center;">Lvl</div>
+                <div id="member-lvl" style="font-family: 'Cinzel', serif; font-size: 1.8rem; color: #7F522B; text-align: center;">1</div>
+            </div>
+            
+            <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);">
+                <div class="exp-label" style="text-align: center; font-size: 0.8rem;">EXP</div>
+                <div id="member-exp" style="font-family: 'Cinzel', serif; font-size: 1.2rem; color: #7F522B; text-align: center;">0</div>
+            </div>
+
+            <div class="stat-group" style="margin-top: 10px; padding-bottom: 50px;">
+                <div class="stat-label">Bloodline Court:</div>
+                <div class="stat-val abs-stat-text" id="member-bloodline">---</div>
+
+                <div class="stat-label">Birth Court:</div>
+                <div class="stat-val abs-stat-text" id="member-birthcourt">---</div>
+
+                <div class="stat-label">Essence Type:</div>
+                <div class="stat-val abs-stat-text" id="member-essence">---</div>
+
+                <div class="stat-label">Trigger:</div>
+                <div class="stat-val abs-stat-text" id="member-trigger">---</div>
+
+                <div class="power-section">Magic Power</div>
+
+                <div class="stat-label">Offensive: <span id="member-off-name" style="font-weight:normal;">---</span></div>
+                <div class="stat-val">DMG: <span id="member-off-dmg">---</span></div>
+
+                <div class="stat-label">Defensive: <span id="member-def-name" style="font-weight:normal;">---</span></div>
+                <div class="stat-val">HP: <span id="member-def-hp">---</span></div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- SCHOOL MODAL -->
@@ -214,6 +262,6 @@
     </div>
 </div>
 
-<script type="module" src="js/hub.js?v=16"></script>
+<script type="module" src="js/hub.js?v=17"></script>
 </body>
 </html>
