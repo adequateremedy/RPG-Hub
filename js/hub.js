@@ -1244,6 +1244,15 @@ getRedirectResult(auth).then((result) => {
         if (credential && credential.accessToken) {
             gDriveToken = credential.accessToken;
             localStorage.setItem("gDriveToken", gDriveToken);
+            if (result.user && loginScreen.classList.contains("hidden") === false) {
+                 loginScreen.classList.add("hidden");
+                 handleUserReady(result.user).catch(error => {
+                     console.error("Auto-login failed:", error);
+                     localStorage.removeItem("gDriveToken");
+                     gDriveToken = null;
+                     showError("Session expired or Drive connection failed. Please sign in again.");
+                 });
+            }
         }
     }
 }).catch((error) => {
@@ -1262,8 +1271,6 @@ onAuthStateChanged(auth, async (user) => {
             gDriveToken = null;
             showError("Session expired or Drive connection failed. Please sign in again.");
         }
-    } else if (user && !gDriveToken) {
-        signInWithRedirect(auth, provider);
     }
 });
 
