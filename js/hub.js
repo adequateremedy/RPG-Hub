@@ -659,6 +659,20 @@ async function buildHubUI(user) {
     } else {
         let availableActionsHTML = "";
 
+        // SYSTEM UPDATE NOTICE FOR LEGACY PORTRAITS
+        if (!playerJsonData.portraitUrl) {
+            availableActionsHTML += `
+                <div style="background: rgba(127, 82, 43, 0.15); border: 1px solid #7F522B; border-radius: 8px; padding: 15px; margin-bottom: 25px; width: 100%; max-width: 600px; text-align: center;">
+                    <h3 style="color: #e3d2b9; margin-top: 0; margin-bottom: 10px; font-size: 1.15rem;">⚠️ System Update: Profile Images</h3>
+                    <p style="font-size: 0.95rem; opacity: 0.9; margin-bottom: 0; line-height: 1.6;">
+                        We recently upgraded the Hub to allow players to view each other's Character Cards in the Members tab! Because your original image is securely locked inside your private Google Drive, you will need to re-upload it to make it visible to the group.
+                        <br><br>
+                        Please return to your <strong>Character Card</strong> tab and click <strong>Upload Image</strong> to sync your portrait to the new public server.
+                    </p>
+                </div>
+            `;
+        }
+
         if (playerJsonData.exp >= 500) {
             availableActionsHTML += `
                 <details class="hub-dropdown">
@@ -1025,6 +1039,10 @@ fileInput.addEventListener("change", async (e) => {
             await saveDriveAppData(); // Syncs to Drive AND Firestore instantly
             
             document.getElementById("ui-portrait-img").src = publicUrl;
+            
+            // Re-render UI to remove the update banner if it was present
+            await buildHubUI(auth.currentUser);
+            
         } catch (err) {
             console.error("Image upload failed", err);
             alert("Failed to upload image to Firebase Storage.");
