@@ -1,3 +1,4 @@
+import { CURRENT_HUB_VERSION, SYSTEM_UPDATES } from './updates.js?v=25';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
 import { 
     getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged 
@@ -24,7 +25,6 @@ provider.addScope('https://www.googleapis.com/auth/drive.appdata');
 provider.setCustomParameters({ prompt: 'consent' });
 
 // Global state
-const CURRENT_HUB_VERSION = "1.0.4";
 let gDriveToken = sessionStorage.getItem("gDriveToken") || null;
 let dataFileId = null;
 let playerJsonData = {};
@@ -78,33 +78,21 @@ const elementsToUpdate = {
     "ui-def-hp": "defensiveMagicHp"
 };
 
-// --- SYSTEM UPDATES CONTENT ---
-const SYSTEM_UPDATES = [
-    {
-        id: "update_004_inbox_system",
-        title: "v1.0.4 - Inbox System & Instant Portraits",
-        date: "August 2026",
-        content: "We've upgraded the Updates tab to function like a true inbox! You will now see a notification badge when new patches drop. Messages stay in your inbox for reference until you use the new checkboxes and 'Delete Selected' button to clear them out.\n\nWe also completely bypassed the third-party image server! When you upload a portrait now, the Hub instantly compresses and saves it directly to our public database, making uploads lightning fast and much more stable."
-    },
-    {
-        id: "update_003_updates_tab",
-        title: "v1.0.3 - New Updates Folder",
-        date: "August 2026",
-        content: "We have introduced this new Updates folder attached directly to your Star! As the Solus Dynasty Universe continues to grow, this space will serve as your central notification hub for all patch notes, mechanic changes, and system resets across all Eras and Generations. You can safely leave messages here for reference, or check the box and delete them to keep your feed clean."
-    },
-    {
-        id: "update_002_members",
-        title: "v1.0.2 - Public Member Cards & Portraits",
-        date: "August 2026",
-        content: "Our team agreed that it is much more beneficial and engaging for everyone to be able to see each other's characters! You can now click on any player's name in the Members tab to view a public version of their full Character Card, including their magical stats and portrait.\n\n**Action Required:** Because your original image is securely locked inside your private Google Drive, you will need to re-upload it. Please go to your Character Card and click 'Upload Image' again to compress and sync your portrait to our public server."
-    },
-    {
-        id: "update_001_runic",
-        title: "v1.0.1 - Runic Fally System Upgrade",
-        date: "August 2026",
-        content: "We have completely overhauled the Runic Fally class mechanics and asset management! The Runic Stones now feature a stunning, interactive white glow that responds to your unique energy when touched. To ensure everyone receives this new interactive asset and benefits from the corrected EXP scaling, all previous Class 1 records have been reset.\n\n**Action Required:** Simply replay the Runic Fally class located in your Available tab, lock in your grade, and claim your upgraded Runic Stone."
-    }
-];
+// --- UPDATES AUTO-EXPIRE FILTER ---
+function getActiveUpdates() {
+    const now = new Date();
+    return SYSTEM_UPDATES.filter(u => {
+        // Automatically drop if older than 14 days
+        const uDate = new Date(u.date + 'T00:00:00'); 
+        const diffDays = (now - uDate) / (1000 * 60 * 60 * 24);
+        if (diffDays > 14) return false;
+        
+        // Drop if player manually dismissed it
+        if (playerJsonData.dismissedUpdates && playerJsonData.dismissedUpdates.includes(u.id)) return false;
+
+        return true;
+    });
+}
 
 // Tier 2 Tabs logic (Star Level vs Era Level)
 document.querySelectorAll('.tier-2 .tab-btn:not(.disabled)').forEach(btn => {
@@ -118,8 +106,8 @@ document.querySelectorAll('.tier-2 .tab-btn:not(.disabled)').forEach(btn => {
             
             // Mark unseen updates as seen
             let changed = false;
-            SYSTEM_UPDATES.forEach(u => {
-                if (!playerJsonData.dismissedUpdates.includes(u.id) && !playerJsonData.seenUpdates.includes(u.id)) {
+            getActiveUpdates().forEach(u => {
+                if (!playerJsonData.seenUpdates.includes(u.id)) {
                     playerJsonData.seenUpdates.push(u.id);
                     changed = true;
                 }
@@ -174,10 +162,8 @@ function hideLoading() {
 
 // --- UPDATES & BADGE LOGIC ---
 function updateBadge() {
-    const unseen = SYSTEM_UPDATES.filter(u => 
-        !playerJsonData.dismissedUpdates.includes(u.id) && 
-        !playerJsonData.seenUpdates.includes(u.id)
-    );
+    const active = getActiveUpdates();
+    const unseen = active.filter(u => !playerJsonData.seenUpdates.includes(u.id));
     const badge = document.getElementById("updates-badge");
     if (unseen.length > 0) {
         badge.textContent = unseen.length;
@@ -194,7 +180,7 @@ function renderUpdates() {
     container.innerHTML = "";
     versionDisplay.textContent = `Current Hub Version: ${CURRENT_HUB_VERSION}`;
 
-    const activeUpdates = SYSTEM_UPDATES.filter(u => !playerJsonData.dismissedUpdates.includes(u.id));
+    const activeUpdates = getActiveUpdates();
 
     if (activeUpdates.length === 0) {
         deleteBtn.style.display = "none";
@@ -207,15 +193,16 @@ function renderUpdates() {
     activeUpdates.forEach(update => {
         const div = document.createElement("div");
         div.className = "update-card";
+        div.style.padding = "15px";
         div.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 10px;">
-                <div style="display:flex; align-items:center; gap: 10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+                <label style="display:flex; align-items:center; gap: 10px; cursor:pointer; color:#e3d2b9; font-weight:bold;">
                     <input type="checkbox" class="update-checkbox" value="${update.id}">
-                    <h3 class="update-title" style="margin:0; border:none; padding:0;">${update.title}</h3>
-                </div>
+                    Select to Delete
+                </label>
                 <div class="update-date" style="position:static;">${update.date}</div>
             </div>
-            <div class="update-text">${update.content}</div>
+            <img src="${update.imageUrl}" alt="System Update" style="width:100%; border-radius:6px; border: 1px solid #333; display:block;">
         `;
         container.appendChild(div);
     });
@@ -888,7 +875,7 @@ async function buildHubUI(user) {
             const clearImagesBtn = document.getElementById("clearImagesBtn");
 
             const soloPrompts = {
-                "market": "Walking closely with your guardian, humans brush past without looking down, their eyes sliding off you like water. You feel a warm hum of your unique energy, but why do they pretend you arent there?",
+                "market": "Walking closely with your guardian, humans brush past without looking down, their eyes sliding off you like water. You feel a warm hum of your unique energy, but why do they pretend you aren't there?",
                 "library": "Sitting in the grand reading room while your guardian watches over you. A human clerk walks by, totally ignoring your polite greeting. Your inner energy flickers in response to the cold shoulder.",
                 "train": "Waiting on the platform, holding your guardian's hand tightly. Human children play nearby, but you notice their parents quickly and quietly pull them away from you.",
                 "bakery": "The baker hands your guardian the pastries, refusing to acknowledge your existence or look at your face, leaving you to wonder what makes your energy so different.",
