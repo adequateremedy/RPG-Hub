@@ -30,7 +30,7 @@ let gDriveToken = sessionStorage.getItem("gDriveToken") || null;
 let dataFileId = null;
 let playerJsonData = {};
 let queuedJournalImages = [];
-const maxJournalEntries = 5;
+let queuedRpImages = [];
 
 // DOM Elements
 const loginScreen = document.getElementById("loginScreen");
@@ -90,16 +90,14 @@ async function loadSystemUpdates() {
         const now = new Date();
 
         files.forEach(file => {
-            // Looks for exactly: YYYY-MM-DD_vX.X.X.png (or jpg, etc)
             const match = file.name.match(/^(\d{4}-\d{2}-\d{2})_(v[\d\.]+)\.(png|jpg|jpeg|gif)$/i);
             if (match) {
                 const uDate = new Date(match[1] + 'T00:00:00');
                 const diffDays = (now - uDate) / (1000 * 60 * 60 * 24);
                 
-                // Only load if 14 days old or newer
                 if (diffDays <= 14) {
                     validUpdates.push({
-                        id: file.name, // The exact filename acts as the un-repeatable Unique ID
+                        id: file.name, 
                         date: match[1],
                         version: match[2],
                         imageUrl: `assets/images/updates/${file.name}` 
@@ -108,13 +106,12 @@ async function loadSystemUpdates() {
             }
         });
 
-        // Sort them so the newest date is at the top of the inbox
         validUpdates.sort((a, b) => new Date(b.date) - new Date(a.date));
         
         SYSTEM_UPDATES = validUpdates;
         
         if (SYSTEM_UPDATES.length > 0) {
-            CURRENT_HUB_VERSION = SYSTEM_UPDATES[0].version; // Grab the version from the newest image
+            CURRENT_HUB_VERSION = SYSTEM_UPDATES[0].version;
         }
     } catch (err) {
         console.error("Failed to load updates from GitHub:", err);
@@ -124,13 +121,12 @@ async function loadSystemUpdates() {
 // --- UPDATES AUTO-EXPIRE FILTER ---
 function getActiveUpdates() {
     return SYSTEM_UPDATES.filter(u => {
-        // Drop if player manually dismissed it based on the exact filename
         if (playerJsonData.dismissedUpdates && playerJsonData.dismissedUpdates.includes(u.id)) return false;
         return true;
     });
 }
 
-// Tier 2 Tabs logic (Star Level vs Era Level)
+// Tier 2 Tabs logic 
 document.querySelectorAll('.tier-2 .tab-btn:not(.disabled)').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.tier-2 .tab-btn').forEach(b => b.classList.remove('active'));
@@ -140,7 +136,6 @@ document.querySelectorAll('.tier-2 .tab-btn:not(.disabled)').forEach(btn => {
             document.getElementById("gen-updates-content").classList.remove("hidden");
             document.getElementById("gen-1-content").classList.add("hidden");
             
-            // Mark unseen updates as seen
             let changed = false;
             getActiveUpdates().forEach(u => {
                 if (!playerJsonData.seenUpdates.includes(u.id)) {
@@ -151,7 +146,7 @@ document.querySelectorAll('.tier-2 .tab-btn:not(.disabled)').forEach(btn => {
             
             if (changed) {
                 updateBadge();
-                saveDriveAppData(); // Fire and forget save
+                saveDriveAppData(); 
             }
             
             renderUpdates();
@@ -162,7 +157,7 @@ document.querySelectorAll('.tier-2 .tab-btn:not(.disabled)').forEach(btn => {
     });
 });
 
-// Tier 3 Tabs logic (Era Specific)
+// Tier 3 Tabs logic 
 document.querySelectorAll('.tier-3 .tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.tier-3 .tab-btn').forEach(b => b.classList.remove('active'));
@@ -196,7 +191,6 @@ function hideLoading() {
     loadingStatusText.textContent = "";
 }
 
-// --- UPDATES & BADGE LOGIC ---
 function updateBadge() {
     const active = getActiveUpdates();
     const unseen = active.filter(u => !playerJsonData.seenUpdates.includes(u.id));
@@ -263,8 +257,6 @@ document.getElementById("delete-updates-btn").addEventListener("click", async ()
         hideLoading();
     }
 });
-
-// --- FIRESTORE PUBLIC PROFILE SYNC ---
 
 async function syncProfileToFirestore(user) {
     if (!user) return;
@@ -369,8 +361,6 @@ function showMemberCard(data, displayName) {
     memberCardModal.classList.remove("hidden");
 }
 
-// --- GOOGLE DRIVE API FUNCTIONS ---
-
 async function getDriveAppData() {
     const res = await fetch("https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='character_data.json'", {
         headers: { 'Authorization': `Bearer ${gDriveToken}` }
@@ -398,6 +388,9 @@ async function getDriveAppData() {
         if (playerJsonData.journalEntries === undefined) {
             playerJsonData.journalEntries = [];
         }
+        if (playerJsonData.rpSessions === undefined) {
+            playerJsonData.rpSessions = [];
+        }
         if (playerJsonData.inventory === undefined) {
             playerJsonData.inventory = [];
         }
@@ -408,7 +401,6 @@ async function getDriveAppData() {
             playerJsonData.seenUpdates = [];
         }
 
-        // --- VERSION CONTROL & FORCED WIPE ---
         if (!playerJsonData.versions) playerJsonData.versions = {};
         const CURRENT_RUNIC_VERSION = 2;
 
@@ -439,26 +431,6 @@ async function getDriveAppData() {
             await saveDriveAppData();
         }
 
-        if (playerJsonData.exp > 200) {
-            let correctExp = 0;
-            if (playerJsonData.birthBookCompleted) correctExp += 50;
-            if (playerJsonData.schoolProgress && playerJsonData.schoolProgress.class1) {
-                correctExp += 100;
-                playerJsonData.class1ExpAwarded = true;
-            }
-            if (playerJsonData.journalEntries) correctExp += (playerJsonData.journalEntries.length * 10);
-            
-            playerJsonData.exp = correctExp;
-            
-            const runicStones = playerJsonData.inventory.filter(i => i.category === "Runic Stone");
-            if (runicStones.length > 1) {
-                const lastStone = runicStones[runicStones.length - 1];
-                playerJsonData.inventory = playerJsonData.inventory.filter(i => i.category !== "Runic Stone");
-                if (lastStone) playerJsonData.inventory.push(lastStone);
-            }
-            await saveDriveAppData();
-        }
-
     } else {
         playerJsonData = {
             starName: "",
@@ -466,6 +438,7 @@ async function getDriveAppData() {
             birthBookExpAwarded: false, 
             schoolProgress: { class1: false, class2: false, class3: false, class4: false, class5: false },
             journalEntries: [],
+            rpSessions: [],
             inventory: [],
             dismissedUpdates: [],
             seenUpdates: [],
@@ -562,6 +535,42 @@ function calculateLevel() {
     playerJsonData.level = lvl;
 }
 
+function getCurrentAgeGroup() {
+    if (!playerJsonData.schoolProgress.class1) return "2-3";
+    if (!playerJsonData.schoolProgress.class2) return "4-5";
+    if (!playerJsonData.schoolProgress.class3) return "6-7";
+    if (!playerJsonData.schoolProgress.class4) return "8-9";
+    return "10-11";
+}
+
+const journalPromptsByAge = {
+    "2-3": {
+        "1": "The Brass Market - in Crudsder, Eidolon (Ireland): Ignored by humans brushing past (actual RP Room available).",
+        "2": "Any (Cogsbin, SteelMills, or Crudsder - Eidolon (Ireland)) Steam-Train Platform: Human parents pulling their children away from you. The Brushed Herbs Bakery - in Crudsder, Eidolon (Ireland): Baker refuses to acknowledge you, or your caretaker/parent(s).",
+        "3": "The Clockwork Toy Shop - in Cogsbin, Eidolon (Ireland): Fascinated by toys, but shooed out by the owner. They don't serve Fae-kind."
+    },
+    "4-5": {
+        "1": "Needlepoint Apothecary, in SteelMills, Eidolon (Ireland): Watching potions bubble and feeling their Energy.",
+        "2": "The Backhand Tailor Shop - in Crudsder, Eidolon (Ireland): Being measured for restrictive hat/cap meant to hide your pointed, fae ears.",
+        "3": "The Airship Docks of SteelMills - in SteelMills, Eidolon (Ireland): Watching the heavy smog and a feeling of being distant from the humans, as you are segregated onboard."
+    },
+    "6-7": {
+        "1": "A random spice merchant's stall - Eidolon (Ireland): Recognizing ingredients strictly through your sense of smell. Merchant is a Fae woman and is very nice to you.",
+        "2": "Home Kitchen: Your parent/guardian helps you make a meal for everyone in your home.",
+        "3": "The Brass Market - in Crudsder, Eidolon (Ireland): You tag along with your parent(s)/guardian, looking for some meat at the Butcher's Shop (actual RP Room available)."
+    },
+    "8-9": {
+        "1": "Fyxd Botany - in Cogsbin, Eidolon (Ireland): You are with your parent/guardian and notice that certain plants react subtly to your Energy. Owner is an old Seelie Fae man who never smiles, but is friendly.",
+        "2": "Tinker's Shop - in SteelMills, Eidolon (Ireland): Observing timepieces (with parent/guardian) that feel fundamentally 'wrong' to your Energy.",
+        "3": "The Brass Market - in Crudsder, Eidolon (Ireland): You are left to wander around the area, by yourself - as long as you promise to stay in The Brass Market (actual RP Room available)."
+    },
+    "10-11": {
+        "1": "The Airship Docks of SteelMills - in SteelMills, Eidolon (Ireland): Watching the heavy smog and a feeling of being distant from the humans, as you & your parent(s)/guardian(s) are segregated onboard.",
+        "2": "At Home - Overhear guardian(s)/parent(s) talking to another Fae adult about Humans putting Fae in Cages. They cannot see you, and you know if they do, they will stop talking about it.",
+        "3": "The Brass Market - in Crudsder, Eidolon (Ireland): Parent(s)/Guardian(s) send you to buy some food for the Home (actual RP Room available)."
+    }
+};
+
 async function renderInventory() {
     const inventoryGrid = document.getElementById("inventoryGrid");
     const items = playerJsonData.inventory || [];
@@ -620,7 +629,8 @@ async function renderJournalAndGallery() {
     const journalContainer = document.getElementById("journalEntriesContainer");
     const galleryListContainer = document.getElementById("galleryListContainer");
     
-    const entries = playerJsonData.journalEntries || [];
+    const jEntries = playerJsonData.journalEntries || [];
+    const rpEntries = playerJsonData.rpSessions || [];
     galleryListContainer.innerHTML = "";
 
     if (playerJsonData.birthCourt) {
@@ -636,29 +646,48 @@ async function renderJournalAndGallery() {
     }
 
     let hasImages = !!playerJsonData.birthCourt;
-    if (entries.length > 0) {
-        for (let i = 0; i < entries.length; i++) {
-            const entry = entries[i];
-            if (entry.images && entry.images.length > 0) {
-                hasImages = true;
-                entry.images.forEach(async (fileId, imgIndex) => {
-                    const labelName = `${entry.type === 'RP' ? 'Live RP Session' : 'Solo Journal'} (${entry.date}) — Image ${imgIndex + 1}`;
-                    const li = document.createElement("li");
-                    li.className = "gallery-item";
-                    li.textContent = labelName;
-                    
-                    try {
-                        const url = await getImageUrl(fileId);
-                        li.addEventListener("click", () => {
-                            lightboxImg.src = url;
-                            lightboxModal.classList.remove("hidden");
-                        });
-                    } catch (e) {
-                        console.error("Failed to load image URL for gallery", e);
-                    }
-                    galleryListContainer.appendChild(li);
-                });
-            }
+    
+    // Journal Images
+    for (let i = 0; i < jEntries.length; i++) {
+        const entry = jEntries[i];
+        if (entry.images && entry.images.length > 0) {
+            hasImages = true;
+            entry.images.forEach(async (fileId, imgIndex) => {
+                const labelName = `Solo Journal (${entry.date}) — Image ${imgIndex + 1}`;
+                const li = document.createElement("li");
+                li.className = "gallery-item";
+                li.textContent = labelName;
+                try {
+                    const url = await getImageUrl(fileId);
+                    li.addEventListener("click", () => {
+                        lightboxImg.src = url;
+                        lightboxModal.classList.remove("hidden");
+                    });
+                } catch (e) { console.error(e); }
+                galleryListContainer.appendChild(li);
+            });
+        }
+    }
+
+    // RP Session Images
+    for (let i = 0; i < rpEntries.length; i++) {
+        const entry = rpEntries[i];
+        if (entry.images && entry.images.length > 0) {
+            hasImages = true;
+            entry.images.forEach(async (fileId, imgIndex) => {
+                const labelName = `Live RP Session (${entry.date}) — Image ${imgIndex + 1}`;
+                const li = document.createElement("li");
+                li.className = "gallery-item";
+                li.textContent = labelName;
+                try {
+                    const url = await getImageUrl(fileId);
+                    li.addEventListener("click", () => {
+                        lightboxImg.src = url;
+                        lightboxModal.classList.remove("hidden");
+                    });
+                } catch (e) { console.error(e); }
+                galleryListContainer.appendChild(li);
+            });
         }
     }
 
@@ -666,19 +695,19 @@ async function renderJournalAndGallery() {
         galleryListContainer.innerHTML = `<p style="text-align:center; opacity:0.7;">No gallery images found.</p>`;
     }
 
-    if (entries.length === 0) {
+    if (jEntries.length === 0) {
         journalContainer.innerHTML = `<p style="text-align:center; opacity:0.7;">No journal entries yet.</p>`;
         return;
     }
 
     journalContainer.innerHTML = "";
-    for (let i = entries.length - 1; i >= 0; i--) {
-        const entry = entries[i];
+    for (let i = jEntries.length - 1; i >= 0; i--) {
+        const entry = jEntries[i];
         const div = document.createElement("div");
         div.className = "journal-entry";
         div.innerHTML = `
             <div class="journal-entry-header">
-                <span>${entry.type === 'RP' ? 'Live RP Session' : 'Solo Journal'}</span>
+                <span>Solo Journal (Age ${entry.ageGroup || "2-3"})</span>
                 <span>${entry.date}</span>
             </div>
             <div class="journal-entry-text">${entry.text}</div>
@@ -691,7 +720,7 @@ async function buildHubUI(user) {
     document.getElementById("headerPlayerEmail").textContent = user.email;
 
     calculateLevel();
-    updateBadge(); // Trigger badge logic on load
+    updateBadge(); 
 
     if (playerJsonData.starName) {
         starNameDisplay.textContent = playerJsonData.starName;
@@ -706,7 +735,7 @@ async function buildHubUI(user) {
 
     for (const [elementId, dataKey] of Object.entries(elementsToUpdate)) {
         const el = document.getElementById(elementId);
-        if (!el) continue; // Safety null check to prevent breaking
+        if (!el) continue; 
         const val = playerJsonData[dataKey];
         if (val !== undefined && val !== "" && val !== null) {
             el.textContent = val;
@@ -798,6 +827,10 @@ async function buildHubUI(user) {
             </div>
         `;
     } else {
+        const currentAgeGroup = getCurrentAgeGroup();
+        const ageJournalsCount = playerJsonData.journalEntries.filter(e => (e.ageGroup || "2-3") === currentAgeGroup).length;
+        const ageRpCount = playerJsonData.rpSessions.filter(e => (e.ageGroup || "2-3") === currentAgeGroup).length;
+
         let availableActionsHTML = "";
 
         if (playerJsonData.exp >= 500) {
@@ -820,15 +853,14 @@ async function buildHubUI(user) {
             </details>
         `;
 
-        const entriesCount = (playerJsonData.journalEntries || []).length;
-        
-        if (entriesCount >= maxJournalEntries) {
+        // JOURNAL SECTION
+        if (ageJournalsCount >= 5) {
             availableActionsHTML += `
                 <details class="hub-dropdown">
                     <summary>Journal (Experiences)</summary>
                     <div class="dropdown-content" style="text-align:center;">
-                        <p style="color:#7F522B; font-weight:bold;">Max Journal Entries Completed (5/5)</p>
-                        <p style="opacity:0.8; font-size:0.9rem;">You have earned the maximum EXP available from journaling at this stage.</p>
+                        <p style="color:#7F522B; font-weight:bold;">Max Journal Entries Completed (5/5) for Age ${currentAgeGroup}</p>
+                        <p style="opacity:0.8; font-size:0.9rem;">You have earned the maximum EXP available from solo journaling for your current age group.</p>
                     </div>
                 </details>
             `;
@@ -837,42 +869,107 @@ async function buildHubUI(user) {
                 <details class="hub-dropdown">
                     <summary>Journal (Experiences)</summary>
                     <div class="dropdown-content">
-                        <p style="text-align:center; font-weight:bold; color:#7F522B; margin-top:0;">Completed: ${entriesCount} / 5</p>
-                        
-                        <div style="display:flex; justify-content:center; gap:20px; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:15px;">
-                            <label><input type="radio" name="journalType" value="RP"> Live RP</label>
-                            <label><input type="radio" name="journalType" value="Solo"> Solo Writing</label>
-                        </div>
+                        <p style="text-align:center; font-weight:bold; color:#7F522B; margin-top:0;">Age ${currentAgeGroup} Journals Completed: ${ageJournalsCount} / 5</p>
+                        <p style="text-align:center; font-size: 0.9rem; opacity: 0.9; margin-bottom: 20px;">
+                            Journals are <strong>1st-person</strong> solo writing entries describing your personal experience based on your current age bracket.
+                        </p>
 
-                        <div id="soloWritingOptions" class="hidden">
+                        <div id="soloWritingOptions">
                             <label style="font-weight:bold; color:#7F522B;">Choose a Lore Scene:</label>
-                            <select id="sceneSelect" style="width:100%; padding:10px; margin-top:8px; background:#222; color:#fff; border:1px solid #444; font-family:inherit; border-radius:4px;">
+                            <select id="journalSceneSelect" style="width:100%; padding:10px; margin-top:8px; background:#222; color:#fff; border:1px solid #444; font-family:inherit; border-radius:4px;">
                                 <option value="">-- Select Scene --</option>
-                                <option value="market">1. The Brass Market</option>
-                                <option value="library">2. The Steampunk Library</option>
-                                <option value="train">3. The Steam-Train Platform</option>
-                                <option value="bakery">4. The Coal-Oven Bakery</option>
-                                <option value="courtyard">5. The Walled Courtyard</option>
+                                <option value="1">Scene Option 1</option>
+                                <option value="2">Scene Option 2</option>
+                                <option value="3">Scene Option 3</option>
                             </select>
                         </div>
 
-                        <div id="journalPrompt" class="hidden" style="margin-top:15px; padding:15px; background:rgba(255,255,255,0.05); border-left:4px solid #7F522B; font-style:italic;"></div>
+                        <div id="journalPromptContainer" class="hidden" style="margin-top:15px; padding:15px; background:rgba(255,255,255,0.05); border-left:4px solid #7F522B; font-style:italic;"></div>
 
-                        <div id="journalAction" class="hidden" style="margin-top:20px;">
-                            <div id="journalInstructions" style="font-size:0.9rem; opacity:0.9; margin-bottom:15px;"></div>
+                        <div id="journalActionContainer" class="hidden" style="margin-top:20px;">
+                            <div style="font-size:0.9rem; opacity:0.9; margin-bottom:15px;">
+                                <strong>Requirements:</strong><br>
+                                • 1st-person journal entry (Min 500 words).<br>
+                                • Attach 3 to 10 images from your device.
+                            </div>
                             
                             <textarea id="journalTextarea" rows="8" style="width:100%; padding:10px; background:#1a1a1a; color:#eee; border:1px solid #444; font-family:inherit; border-radius:4px;" placeholder="Write your first-person journal entry here..."></textarea>
                             
                             <div style="margin-top:15px;">
-                                <label style="font-weight:bold; font-size:0.9rem; color:#7F522B;">Attach Images (Select one by one or multiple at once):</label>
+                                <label style="font-weight:bold; font-size:0.9rem; color:#7F522B;">Attach Images:</label>
                                 <input type="file" id="journalImagesInput" accept="image/*" multiple style="width:100%; margin-top:5px;">
                                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
                                     <span id="journalImageCount" style="font-size:0.85rem; color:#aaa;">0 images attached</span>
-                                    <button id="clearImagesBtn" type="button" class="hidden" style="padding:4px 8px; font-size:0.8rem;">Clear Selected</button>
+                                    <button id="clearJournalImagesBtn" type="button" class="hidden" style="padding:4px 8px; font-size:0.8rem;">Clear Selected</button>
                                 </div>
                             </div>
 
                             <button id="saveJournalBtn" style="margin-top:20px; width:100%; border-color:#7F522B; font-weight:bold;">Save Journal Entry (+10 EXP)</button>
+                        </div>
+                    </div>
+                </details>
+            `;
+        }
+
+        // RP SESSION SECTION
+        if (ageRpCount >= 5) {
+            availableActionsHTML += `
+                <details class="hub-dropdown">
+                    <summary>RP Session (Experiences)</summary>
+                    <div class="dropdown-content" style="text-align:center;">
+                        <p style="color:#7F522B; font-weight:bold;">Max RP Sessions Completed (5/5) for Age ${currentAgeGroup}</p>
+                        <p style="opacity:0.8; font-size:0.9rem;">You have earned the maximum EXP available from RP sessions for your current age group.</p>
+                    </div>
+                </details>
+            `;
+        } else {
+            availableActionsHTML += `
+                <details class="hub-dropdown">
+                    <summary>RP Session (Experiences)</summary>
+                    <div class="dropdown-content">
+                        <p style="text-align:center; font-weight:bold; color:#7F522B; margin-top:0;">Age ${currentAgeGroup} RP Sessions Completed: ${ageRpCount} / 5</p>
+                        <p style="text-align:center; font-size: 0.9rem; opacity: 0.9; margin-bottom: 20px;">
+                            RP Sessions are <strong>3rd-person</strong> stories documenting your live roleplay interactions with other characters.
+                        </p>
+
+                        <div>
+                            <label style="font-weight:bold; color:#7F522B;">Select RP Location:</label>
+                            <select id="rpLocationSelect" style="width:100%; padding:10px; margin-top:8px; background:#222; color:#fff; border:1px solid #444; font-family:inherit; border-radius:4px;">
+                                <option value="">-- Select Location --</option>
+                                <option value="market">The Brass Market (IMVU)</option>
+                                <option value="other">Other / Custom Location</option>
+                            </select>
+                        </div>
+
+                        <div id="rpImvuLinkContainer" class="hidden" style="margin-top:15px; text-align:center;">
+                            <p style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 10px;">Click below to open IMVU and enter the public RP room.</p>
+                            <a href="https://go.imvu.com/chat/room-184439344-7012" target="_blank" style="display:inline-block; border: 1px solid #7F522B; background:#222; color:#e3d2b9; padding:10px 20px; font-weight:bold; border-radius:6px; text-decoration:none;">Launch The Brass Market Room</a>
+                        </div>
+
+                        <div id="rpCustomLocationContainer" class="hidden" style="margin-top:15px;">
+                            <input type="text" id="rpCustomLocationInput" placeholder="Enter your RP Location..." style="width:100%; padding:10px; background:#1a1a1a; color:#eee; border:1px solid #444; font-family:inherit; border-radius:4px;">
+                        </div>
+
+                        <div id="rpActionContainer" class="hidden" style="margin-top:20px;">
+                            <div style="font-size:0.9rem; opacity:0.9; margin-bottom:15px;">
+                                <strong>Requirements:</strong><br>
+                                • 3rd-person story / post (Min 500 words).<br>
+                                • Attach 5 to 10 session images.<br>
+                                • Images MUST show: (A) Your character's name in a sentence, (B) Your RP partner's name in a sentence, and (C) The word "Stars" in generalized conversation.
+                            </div>
+                            
+                            <textarea id="rpTextarea" rows="8" style="width:100%; padding:10px; background:#1a1a1a; color:#eee; border:1px solid #444; font-family:inherit; border-radius:4px;" placeholder="Write your 3rd-person RP session story here..."></textarea>
+                            
+                            <div style="margin-top:15px;">
+                                <label style="font-weight:bold; font-size:0.9rem; color:#7F522B;">Attach Images:</label>
+                                <input type="file" id="rpImagesInput" accept="image/*" multiple style="width:100%; margin-top:5px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
+                                    <span id="rpImageCount" style="font-size:0.85rem; color:#aaa;">0 images attached</span>
+                                    <button id="clearRpImagesBtn" type="button" class="hidden" style="padding:4px 8px; font-size:0.8rem;">Clear Selected</button>
+                                </div>
+                            </div>
+
+                            <button id="saveRpBtn" style="margin-top:20px; width:100%; border-color:#7F522B; font-weight:bold;">Submit RP Session (+10 EXP)</button>
                         </div>
                     </div>
                 </details>
@@ -885,11 +982,8 @@ async function buildHubUI(user) {
         if(openSchoolBtn) {
             openSchoolBtn.addEventListener("click", () => {
                 const c1 = playerJsonData.schoolProgress.class1;
-                
                 document.getElementById("chk-class1").textContent = c1 ? "[X]" : "[ ]";
-                
                 document.getElementById("name-class1").innerHTML = `<a href="https://adequateremedy.github.io/Runic-Fally/" style="color: #e3d2b9; text-decoration: underline;">Runic-Fally</a>`;
-
                 document.getElementById("chk-class2").textContent = playerJsonData.schoolProgress.class2 ? "[X]" : "[ ]";
                 document.getElementById("chk-class3").textContent = playerJsonData.schoolProgress.class3 ? "[X]" : "[ ]";
                 document.getElementById("chk-class4").textContent = playerJsonData.schoolProgress.class4 ? "[X]" : "[ ]";
@@ -898,122 +992,65 @@ async function buildHubUI(user) {
             });
         }
 
-        if (entriesCount < maxJournalEntries) {
-            const journalRadios = document.querySelectorAll('input[name="journalType"]');
-            const soloWritingOptions = document.getElementById("soloWritingOptions");
-            const sceneSelect = document.getElementById("sceneSelect");
-            const journalPrompt = document.getElementById("journalPrompt");
-            const journalAction = document.getElementById("journalAction");
-            const journalInstructions = document.getElementById("journalInstructions");
-            const saveJournalBtn = document.getElementById("saveJournalBtn");
-            const journalTextarea = document.getElementById("journalTextarea");
-            const journalImagesInput = document.getElementById("journalImagesInput");
-            const journalImageCount = document.getElementById("journalImageCount");
-            const clearImagesBtn = document.getElementById("clearImagesBtn");
+        // Attach Journal Listeners
+        const journalSceneSelect = document.getElementById("journalSceneSelect");
+        if (journalSceneSelect) {
+            const promptContainer = document.getElementById("journalPromptContainer");
+            const actionContainer = document.getElementById("journalActionContainer");
+            const imagesInput = document.getElementById("journalImagesInput");
+            const imageCount = document.getElementById("journalImageCount");
+            const clearBtn = document.getElementById("clearJournalImagesBtn");
+            const saveBtn = document.getElementById("saveJournalBtn");
+            const textarea = document.getElementById("journalTextarea");
 
-            const soloPrompts = {
-                "market": "Walking closely with your guardian, humans brush past without looking down, their eyes sliding off you like water. You feel a warm hum of your unique energy, but why do they pretend you aren't there?",
-                "library": "Sitting in the grand reading room while your guardian watches over you. A human clerk walks by, totally ignoring your polite greeting. Your inner energy flickers in response to the cold shoulder.",
-                "train": "Waiting on the platform, holding your guardian's hand tightly. Human children play nearby, but you notice their parents quickly and quietly pull them away from you.",
-                "bakery": "The baker hands your guardian the pastries, refusing to acknowledge your existence or look at your face, leaving you to wonder what makes your energy so different.",
-                "courtyard": "Confined to the safety of your home's courtyard. You can hear the human world outside the iron gates—a world you aren't allowed to enter alone because of the strict new laws."
-            };
-
-            let currentMode = "";
-
-            journalRadios.forEach(radio => {
-                radio.addEventListener("change", (e) => {
-                    currentMode = e.target.value;
-                    queuedJournalImages = [];
-                    if(journalImageCount) journalImageCount.textContent = "0 images attached";
-                    if(clearImagesBtn) clearImagesBtn.classList.add("hidden");
-                    if(journalImagesInput) journalImagesInput.value = "";
-
-                    if (currentMode === "RP") {
-                        soloWritingOptions.classList.add("hidden");
-                        journalPrompt.classList.remove("hidden");
-                        journalPrompt.innerHTML = `<strong>Live RP Session</strong><br>Document your social RP in the Steampunk Era of the Midgard Realm. Remember, you are a Fae child, and notice that you and other Fae are often ignored by humans and hidden from the world's horrors by your caretaker(s) and/or parents.`;
-                        
-                        journalInstructions.innerHTML = `
-                            <strong>Requirements:</strong><br>
-                            • First-person journal entry (Min 300 words).<br>
-                            • Attach 5 to 10 session images.<br>
-                            • Images MUST show: (A) Your character's name in a sentence, (B) Your RP partner's name in a sentence, and (C) The word "Stars" in generalized conversation.
-                        `;
-                        journalAction.classList.remove("hidden");
-                    } else if (currentMode === "Solo") {
-                        soloWritingOptions.classList.remove("hidden");
-                        journalPrompt.classList.add("hidden");
-                        journalAction.classList.add("hidden");
-                        sceneSelect.value = "";
-                    }
-                });
-            });
-
-            sceneSelect.addEventListener("change", (e) => {
+            journalSceneSelect.addEventListener("change", (e) => {
                 const val = e.target.value;
-                if(val && soloPrompts[val]) {
-                    journalPrompt.innerHTML = soloPrompts[val];
-                    journalPrompt.classList.remove("hidden");
-                    
-                    journalInstructions.innerHTML = `
-                        <strong>Requirements:</strong><br>
-                        • First-person journal entry (Min 500 words).<br>
-                        • Attach 1 to 3 images from your device.
-                    `;
-                    journalAction.classList.remove("hidden");
+                if (val && journalPromptsByAge[currentAgeGroup][val]) {
+                    promptContainer.innerHTML = `<strong>Scene Prompt:</strong><br>${journalPromptsByAge[currentAgeGroup][val]}`;
+                    promptContainer.classList.remove("hidden");
+                    actionContainer.classList.remove("hidden");
                 } else {
-                    journalPrompt.classList.add("hidden");
-                    journalAction.classList.add("hidden");
+                    promptContainer.classList.add("hidden");
+                    actionContainer.classList.add("hidden");
                 }
             });
 
-            journalImagesInput.addEventListener("change", (e) => {
+            imagesInput.addEventListener("change", (e) => {
                 if (e.target.files) {
                     for (let i = 0; i < e.target.files.length; i++) {
                         queuedJournalImages.push(e.target.files[i]);
                     }
-                    journalImageCount.textContent = `${queuedJournalImages.length} images attached`;
-                    if (queuedJournalImages.length > 0) {
-                        clearImagesBtn.classList.remove("hidden");
-                    }
-                    journalImagesInput.value = "";
+                    imageCount.textContent = `${queuedJournalImages.length} images attached`;
+                    if (queuedJournalImages.length > 0) clearBtn.classList.remove("hidden");
+                    imagesInput.value = "";
                 }
             });
 
-            clearImagesBtn.addEventListener("click", () => {
+            clearBtn.addEventListener("click", () => {
                 queuedJournalImages = [];
-                journalImageCount.textContent = "0 images attached";
-                clearImagesBtn.classList.add("hidden");
+                imageCount.textContent = "0 images attached";
+                clearBtn.classList.add("hidden");
             });
 
-            saveJournalBtn.addEventListener("click", async () => {
-                const text = journalTextarea.value.trim();
+            saveBtn.addEventListener("click", async () => {
+                const text = textarea.value.trim();
                 const words = text.split(/\s+/).filter(w => w.length > 0).length;
                 const files = queuedJournalImages;
-                
-                if (currentMode === "RP") {
-                    if (words < 300) return alert(`Your entry is ${words} words. A minimum of 300 words is required for Live RP.`);
-                    if (files.length < 5 || files.length > 10) return alert(`You selected ${files.length} images. You must upload between 5 and 10 images for Live RP.`);
-                } else if (currentMode === "Solo") {
-                    if (words < 500) return alert(`Your entry is ${words} words. A minimum of 500 words is required for Solo Writing.`);
-                    if (files.length < 1 || files.length > 3) return alert(`You selected ${files.length} images. You must upload between 1 and 3 images for Solo Writing.`);
-                } else {
-                    return;
-                }
+
+                if (words < 500) return alert(`Your entry is ${words} words. A minimum of 500 words is required for Solo Writing.`);
+                if (files.length < 3 || files.length > 10) return alert(`You selected ${files.length} images. You must upload between 3 and 10 images for Journals.`);
 
                 showLoading("Saving journal entry and uploading images. Please wait...");
                 
                 try {
                     const imageFileIds = [];
                     for (let i = 0; i < files.length; i++) {
-                        const fId = await uploadImageToDrive(files[i]);
-                        imageFileIds.push(fId);
+                        imageFileIds.push(await uploadImageToDrive(files[i]));
                     }
 
                     const newEntry = {
                         date: new Date().toLocaleString(),
-                        type: currentMode,
+                        ageGroup: currentAgeGroup,
                         text: text,
                         images: imageFileIds
                     };
@@ -1023,15 +1060,101 @@ async function buildHubUI(user) {
                     queuedJournalImages = []; 
                     
                     await saveDriveAppData();
-                    
                     hideLoading();
                     await buildHubUI(auth.currentUser);
                     alert("Journal entry saved! +10 EXP awarded.");
-                    
                 } catch (err) {
                     console.error(err);
                     hideLoading();
                     alert("Failed to save journal entry. Check console for details.");
+                }
+            });
+        }
+
+        // Attach RP Listeners
+        const rpLocSelect = document.getElementById("rpLocationSelect");
+        if (rpLocSelect) {
+            const imvuContainer = document.getElementById("rpImvuLinkContainer");
+            const customLocContainer = document.getElementById("rpCustomLocationContainer");
+            const customLocInput = document.getElementById("rpCustomLocationInput");
+            const actionContainer = document.getElementById("rpActionContainer");
+            const imagesInput = document.getElementById("rpImagesInput");
+            const imageCount = document.getElementById("rpImageCount");
+            const clearBtn = document.getElementById("clearRpImagesBtn");
+            const saveBtn = document.getElementById("saveRpBtn");
+            const textarea = document.getElementById("rpTextarea");
+
+            rpLocSelect.addEventListener("change", (e) => {
+                const val = e.target.value;
+                imvuContainer.classList.add("hidden");
+                customLocContainer.classList.add("hidden");
+                actionContainer.classList.add("hidden");
+
+                if (val === "market") {
+                    imvuContainer.classList.remove("hidden");
+                    actionContainer.classList.remove("hidden");
+                } else if (val === "other") {
+                    customLocContainer.classList.remove("hidden");
+                    actionContainer.classList.remove("hidden");
+                }
+            });
+
+            imagesInput.addEventListener("change", (e) => {
+                if (e.target.files) {
+                    for (let i = 0; i < e.target.files.length; i++) {
+                        queuedRpImages.push(e.target.files[i]);
+                    }
+                    imageCount.textContent = `${queuedRpImages.length} images attached`;
+                    if (queuedRpImages.length > 0) clearBtn.classList.remove("hidden");
+                    imagesInput.value = "";
+                }
+            });
+
+            clearBtn.addEventListener("click", () => {
+                queuedRpImages = [];
+                imageCount.textContent = "0 images attached";
+                clearBtn.classList.add("hidden");
+            });
+
+            saveBtn.addEventListener("click", async () => {
+                const text = textarea.value.trim();
+                const words = text.split(/\s+/).filter(w => w.length > 0).length;
+                const files = queuedRpImages;
+                const locType = rpLocSelect.value;
+                const customLoc = customLocInput.value.trim();
+
+                if (locType === "other" && !customLoc) return alert("Please enter your custom RP location.");
+                if (words < 500) return alert(`Your story is ${words} words. A minimum of 500 words is required for RP Sessions.`);
+                if (files.length < 5 || files.length > 10) return alert(`You selected ${files.length} images. You must upload between 5 and 10 images for RP Sessions.`);
+
+                showLoading("Saving RP session and uploading images. Please wait...");
+                
+                try {
+                    const imageFileIds = [];
+                    for (let i = 0; i < files.length; i++) {
+                        imageFileIds.push(await uploadImageToDrive(files[i]));
+                    }
+
+                    const newEntry = {
+                        date: new Date().toLocaleString(),
+                        ageGroup: currentAgeGroup,
+                        location: locType === "market" ? "The Brass Market (IMVU)" : customLoc,
+                        text: text,
+                        images: imageFileIds
+                    };
+
+                    playerJsonData.rpSessions.push(newEntry);
+                    playerJsonData.exp = (playerJsonData.exp || 0) + 10;
+                    queuedRpImages = []; 
+                    
+                    await saveDriveAppData();
+                    hideLoading();
+                    await buildHubUI(auth.currentUser);
+                    alert("RP Session submitted! +10 EXP awarded. (Saved to Star Tome data).");
+                } catch (err) {
+                    console.error(err);
+                    hideLoading();
+                    alert("Failed to submit RP session. Check console for details.");
                 }
             });
         }
@@ -1040,7 +1163,7 @@ async function buildHubUI(user) {
 
 async function handleUserReady(user) {
     showLoading("Syncing profile data...");
-    await loadSystemUpdates(); // Ask GitHub for the folder images first
+    await loadSystemUpdates(); 
     await getDriveAppData();
 
     const urlParams = new URLSearchParams(window.location.search);
