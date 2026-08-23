@@ -82,7 +82,46 @@ const elementsToUpdate = {
     "ui-def-hp": "defensiveMagicHp"
 };
 
-// Tier 3 Tabs logic
+// --- SYSTEM UPDATES CONTENT ---
+const SYSTEM_UPDATES = [
+    {
+        id: "update_003_updates_tab",
+        title: "New Updates Folder",
+        date: "August 2026",
+        content: "We have introduced this new Updates folder attached directly to your Star! As the Solus Dynasty Universe continues to grow, this space will serve as your central notification hub for all patch notes, mechanic changes, and system resets across all Eras and Generations. Once you have read an update and completed any required actions, you can safely dismiss the message to keep this tab clean."
+    },
+    {
+        id: "update_002_members",
+        title: "Public Member Cards & Portraits",
+        date: "August 2026",
+        content: "Our team agreed that it is much more beneficial and engaging for everyone to be able to see each other's characters! You can now click on any player's name in the Members tab to view a public version of their full Character Card, including their magical stats and portrait.\n\n**Action Required:** Because your original image is securely locked inside your private Google Drive, you will need to re-upload it to our public Firebase server. Please go to your Character Card and click 'Upload Image' again to make your portrait visible to the community."
+    },
+    {
+        id: "update_001_runic",
+        title: "Runic Fally System Upgrade",
+        date: "August 2026",
+        content: "We have completely overhauled the Runic Fally class mechanics and asset management! The Runic Stones now feature a stunning, interactive white glow that responds to your unique energy when touched. To ensure everyone receives this new interactive asset and benefits from the corrected EXP scaling, all previous Class 1 records have been reset.\n\n**Action Required:** Simply replay the Runic Fally class located in your Available tab, lock in your grade, and claim your upgraded Runic Stone."
+    }
+];
+
+// Tier 2 Tabs logic (Star Level vs Era Level)
+document.querySelectorAll('.tier-2 .tab-btn:not(.disabled)').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tier-2 .tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        if (btn.dataset.target === "gen-updates") {
+            document.getElementById("gen-updates-content").classList.remove("hidden");
+            document.getElementById("gen-1-content").classList.add("hidden");
+            renderUpdates();
+        } else if (btn.dataset.target === "gen-1") {
+            document.getElementById("gen-updates-content").classList.add("hidden");
+            document.getElementById("gen-1-content").classList.remove("hidden");
+        }
+    });
+});
+
+// Tier 3 Tabs logic (Era Specific)
 document.querySelectorAll('.tier-3 .tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.tier-3 .tab-btn').forEach(b => b.classList.remove('active'));
@@ -116,6 +155,40 @@ function hideLoading() {
     loadingStatusText.textContent = "";
 }
 
+// --- UPDATES RENDER LOGIC ---
+function renderUpdates() {
+    const container = document.getElementById("updatesContainer");
+    container.innerHTML = "";
+
+    const activeUpdates = SYSTEM_UPDATES.filter(u => !playerJsonData.dismissedUpdates.includes(u.id));
+
+    if (activeUpdates.length === 0) {
+        container.innerHTML = `<p style="text-align:center; opacity:0.7; margin-top:40px;">You are all caught up! There are no new updates.</p>`;
+        return;
+    }
+
+    activeUpdates.forEach(update => {
+        const div = document.createElement("div");
+        div.className = "update-card";
+        div.innerHTML = `
+            <div class="update-date">${update.date}</div>
+            <h3 class="update-title">${update.title}</h3>
+            <div class="update-text">${update.content}</div>
+            <button class="dismiss-update-btn" data-id="${update.id}">Dismiss Update</button>
+        `;
+        container.appendChild(div);
+    });
+
+    document.querySelectorAll('.dismiss-update-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const updateId = e.target.dataset.id;
+            playerJsonData.dismissedUpdates.push(updateId);
+            renderUpdates(); // re-render immediately to hide it visually
+            await saveDriveAppData(); // save preference to drive
+        });
+    });
+}
+
 // --- FIRESTORE PUBLIC PROFILE SYNC ---
 
 async function syncProfileToFirestore(user) {
@@ -124,7 +197,6 @@ async function syncProfileToFirestore(user) {
     const sName = playerJsonData.starName || "";
     const fullName = sName ? `${charName} ${sName}` : charName;
     
-    // We now sync the entire Character Card profile so it can be viewed by others
     const memberData = {
         googleUid: user.uid,
         email: user.email,
@@ -185,7 +257,6 @@ async function loadMembersLeaderboard() {
                 <td style="text-align: center;">${era}</td>
             `;
             
-            // Add click event to open the player's Character Card
             tr.querySelector('.member-name-link').addEventListener("click", (e) => {
                 e.preventDefault();
                 showMemberCard(data, name);
@@ -255,13 +326,15 @@ async function getDriveAppData() {
         if (playerJsonData.inventory === undefined) {
             playerJsonData.inventory = [];
         }
+        if (playerJsonData.dismissedUpdates === undefined) {
+            playerJsonData.dismissedUpdates = [];
+        }
 
         // --- VERSION CONTROL & FORCED WIPE ---
         if (!playerJsonData.versions) playerJsonData.versions = {};
-        const CURRENT_RUNIC_VERSION = 2; // Version 2 triggers a wipe of old Version 1 glitch data
+        const CURRENT_RUNIC_VERSION = 2;
 
         if (playerJsonData.versions.runicFally !== CURRENT_RUNIC_VERSION) {
-            // Revoke Class 1 progress and EXP
             if (playerJsonData.schoolProgress && playerJsonData.schoolProgress.class1) {
                 playerJsonData.schoolProgress.class1 = false;
                 if (playerJsonData.class1ExpAwarded) {
@@ -270,12 +343,10 @@ async function getDriveAppData() {
                 }
             }
             
-            // Wipe Runic Stones from inventory
             if (playerJsonData.inventory) {
                 playerJsonData.inventory = playerJsonData.inventory.filter(item => item.category !== "Runic Stone");
             }
             
-            // Reset all Runic-Fally progress stats
             playerJsonData.class1Points = 0;
             playerJsonData.class1Round = 1;
             playerJsonData.class1Exp = 0;
@@ -286,12 +357,10 @@ async function getDriveAppData() {
                 Object.keys(playerJsonData.class1TotalRunes).forEach(k => playerJsonData.class1TotalRunes[k] = 0);
             }
             
-            // Update version so this wipe doesn't happen again
             playerJsonData.versions.runicFally = CURRENT_RUNIC_VERSION;
-            await saveDriveAppData(); // Immediately save the wiped state
+            await saveDriveAppData();
         }
 
-        // AUTO-SANITIZER: Fixes the stacked EXP glitch if they still have too much EXP
         if (playerJsonData.exp > 200) {
             let correctExp = 0;
             if (playerJsonData.birthBookCompleted) correctExp += 50;
@@ -303,7 +372,6 @@ async function getDriveAppData() {
             
             playerJsonData.exp = correctExp;
             
-            // Clean up any stray duplicate Runic Stones just in case
             const runicStones = playerJsonData.inventory.filter(i => i.category === "Runic Stone");
             if (runicStones.length > 1) {
                 const lastStone = runicStones[runicStones.length - 1];
@@ -321,7 +389,8 @@ async function getDriveAppData() {
             schoolProgress: { class1: false, class2: false, class3: false, class4: false, class5: false },
             journalEntries: [],
             inventory: [],
-            versions: { runicFally: 2 }, // New players automatically get the current version
+            dismissedUpdates: [],
+            versions: { runicFally: 2 },
             comingOfAgeUnlocked: false,
             comingOfAgeCompleted: false,
             traumaUnlocked: false,
@@ -440,7 +509,6 @@ async function renderInventory() {
                 imgUrl = item.image;
             }
             
-            // Pre-fetch the glowing version URL if it exists
             if (item.glowImageId) {
                 glowImgUrl = await getImageUrl(item.glowImageId);
             }
@@ -457,7 +525,6 @@ async function renderInventory() {
             document.getElementById("itemModalName").textContent = item.name;
             document.getElementById("itemModalCategory").textContent = item.category || "Item";
             
-            // Set the image sources and dataset variables for the hover swap
             itemModalImg.src = imgUrl;
             itemModalImg.dataset.normalSrc = imgUrl;
             itemModalImg.dataset.glowSrc = glowImgUrl; 
@@ -477,7 +544,6 @@ async function renderJournalAndGallery() {
     const entries = playerJsonData.journalEntries || [];
     galleryListContainer.innerHTML = "";
 
-    // 1. Add Birth Book Result to Gallery List if completed
     if (playerJsonData.birthCourt) {
         const bbImageUrl = `https://adequateremedy.github.io/BirthBook/assets/${playerJsonData.birthCourt}-Result.png`;
         const li = document.createElement("li");
@@ -490,7 +556,6 @@ async function renderJournalAndGallery() {
         galleryListContainer.appendChild(li);
     }
 
-    // 2. Add all Experience / Journal images to the same flat list
     let hasImages = !!playerJsonData.birthCourt;
     if (entries.length > 0) {
         for (let i = 0; i < entries.length; i++) {
@@ -503,7 +568,6 @@ async function renderJournalAndGallery() {
                     li.className = "gallery-item";
                     li.textContent = labelName;
                     
-                    // Fetch URL and attach click listener
                     try {
                         const url = await getImageUrl(fileId);
                         li.addEventListener("click", () => {
@@ -523,7 +587,6 @@ async function renderJournalAndGallery() {
         galleryListContainer.innerHTML = `<p style="text-align:center; opacity:0.7;">No gallery images found.</p>`;
     }
 
-    // Render Journal Text Entries
     if (entries.length === 0) {
         journalContainer.innerHTML = `<p style="text-align:center; opacity:0.7;">No journal entries yet.</p>`;
         return;
@@ -579,7 +642,6 @@ async function buildHubUI(user) {
         }
     }
 
-    // Load Public Firebase URL if it exists, otherwise fall back to Drive ID
     if (playerJsonData.portraitUrl) {
         document.getElementById("ui-portrait-img").src = playerJsonData.portraitUrl;
     } else if (playerJsonData.portraitId) {
@@ -613,14 +675,12 @@ async function buildHubUI(user) {
     renderInventory();
     renderJournalAndGallery();
 
-    // --- ACTION TAB PROGRESSION LOGIC ---
     const actionsContainer = document.getElementById("actionsContainer");
     actionsContainer.innerHTML = "";
     
     const isBirthBookComplete = playerJsonData.birthBookCompleted;
     const hasCharacterName = !!playerJsonData.characterName;
     const hasStarName = !!playerJsonData.starName;
-    // Updated to require portraitUrl (public) or portraitId (legacy)
     const hasPortrait = !!playerJsonData.portraitUrl || !!playerJsonData.portraitId;
     const isFullySetup = isBirthBookComplete && hasCharacterName && hasStarName && hasPortrait;
     
@@ -658,20 +718,6 @@ async function buildHubUI(user) {
         `;
     } else {
         let availableActionsHTML = "";
-
-        // SYSTEM UPDATE NOTICE FOR LEGACY PORTRAITS
-        if (!playerJsonData.portraitUrl) {
-            availableActionsHTML += `
-                <div style="background: rgba(127, 82, 43, 0.15); border: 1px solid #7F522B; border-radius: 8px; padding: 15px; margin-bottom: 25px; width: 100%; max-width: 600px; text-align: center;">
-                    <h3 style="color: #e3d2b9; margin-top: 0; margin-bottom: 10px; font-size: 1.15rem;">⚠️ System Update: Profile Images</h3>
-                    <p style="font-size: 0.95rem; opacity: 0.9; margin-bottom: 0; line-height: 1.6;">
-                        We recently upgraded the Hub to allow players to view each other's Character Cards in the Members tab! Because your original image is securely locked inside your private Google Drive, you will need to re-upload it to make it visible to the group.
-                        <br><br>
-                        Please return to your <strong>Character Card</strong> tab and click <strong>Upload Image</strong> to sync your portrait to the new public server.
-                    </p>
-                </div>
-            `;
-        }
 
         if (playerJsonData.exp >= 500) {
             availableActionsHTML += `
@@ -1030,17 +1076,14 @@ fileInput.addEventListener("change", async (e) => {
         try {
             const file = e.target.files[0];
             
-            // Upload Portrait to PUBLIC Firebase Storage instead of private Google Drive
             const storageRef = ref(storage, `portraits/${auth.currentUser.uid}_${file.name}`);
             await uploadBytes(storageRef, file);
             const publicUrl = await getDownloadURL(storageRef);
             
             playerJsonData.portraitUrl = publicUrl;
-            await saveDriveAppData(); // Syncs to Drive AND Firestore instantly
+            await saveDriveAppData();
             
             document.getElementById("ui-portrait-img").src = publicUrl;
-            
-            // Re-render UI to remove the update banner if it was present
             await buildHubUI(auth.currentUser);
             
         } catch (err) {
@@ -1064,7 +1107,6 @@ closeMemberCardBtn.addEventListener("click", () => {
     memberCardModal.classList.add("hidden");
 });
 
-// Lightbox close handlers
 lightboxCloseBtn.addEventListener("click", () => {
     lightboxModal.classList.add("hidden");
 });
@@ -1087,7 +1129,6 @@ memberCardModal.addEventListener("click", (e) => {
     }
 });
 
-// --- HOVER EFFECT FOR INVENTORY MODAL IMAGE ---
 itemModalImg.addEventListener("mouseenter", () => {
     if (itemModalImg.dataset.glowSrc) {
         itemModalImg.src = itemModalImg.dataset.glowSrc;
