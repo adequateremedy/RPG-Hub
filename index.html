@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Solus Dynasty RPG — Hub</title>
-    <link rel="stylesheet" href="css/hub.css?v=28">
+    <link rel="stylesheet" href="css/hub.css?v=30">
 </head>
 <body>
 
@@ -280,6 +280,22 @@
     </div>
 </div>
 
+<!-- JOURNAL MODAL -->
+<div id="journalModal" class="modal-overlay hidden">
+    <div class="modal-box" style="position: relative; max-width: 600px; max-height: 90vh; overflow-y: auto; text-align: left;">
+        <button id="closeJournalBtn" class="lightbox-close" style="top: -20px; right: -20px; z-index: 10;">&times;</button>
+        <div id="journalModalContent"></div>
+    </div>
+</div>
+
+<!-- RP SESSION MODAL -->
+<div id="rpModal" class="modal-overlay hidden">
+    <div class="modal-box" style="position: relative; max-width: 600px; max-height: 90vh; overflow-y: auto; text-align: left;">
+        <button id="closeRpBtn" class="lightbox-close" style="top: -20px; right: -20px; z-index: 10;">&times;</button>
+        <div id="rpModalContent"></div>
+    </div>
+</div>
+
 <!-- ITEM INFO MODAL -->
 <div id="itemModal" class="modal-overlay hidden">
     <div class="modal-box" style="max-width: 400px;">
@@ -299,6 +315,6 @@
     </div>
 </div>
 
-<script type="module" src="js/hub.js?v=28"></script>
+<script type="module" src="js/hub.js?v=30"></script>
 </body>
 </html>
