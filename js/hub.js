@@ -706,6 +706,7 @@ async function buildHubUI(user) {
 
     for (const [elementId, dataKey] of Object.entries(elementsToUpdate)) {
         const el = document.getElementById(elementId);
+        if (!el) continue; // Safety null check to prevent breaking
         const val = playerJsonData[dataKey];
         if (val !== undefined && val !== "" && val !== null) {
             el.textContent = val;
