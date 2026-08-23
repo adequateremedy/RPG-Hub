@@ -571,6 +571,312 @@ const journalPromptsByAge = {
     }
 };
 
+function attachJournalModalListeners() {
+    const currentAgeGroup = getCurrentAgeGroup();
+    const journalSceneSelect = document.getElementById("journalSceneSelect");
+    if (!journalSceneSelect) return;
+
+    const promptContainer = document.getElementById("journalPromptContainer");
+    const actionContainer = document.getElementById("journalActionContainer");
+    const imagesInput = document.getElementById("journalImagesInput");
+    const imageCount = document.getElementById("journalImageCount");
+    const clearBtn = document.getElementById("clearJournalImagesBtn");
+    const saveBtn = document.getElementById("saveJournalBtn");
+    const textarea = document.getElementById("journalTextarea");
+
+    journalSceneSelect.addEventListener("change", (e) => {
+        const val = e.target.value;
+        if (val && journalPromptsByAge[currentAgeGroup][val]) {
+            promptContainer.innerHTML = `<strong>Scene Prompt:</strong><br>${journalPromptsByAge[currentAgeGroup][val]}`;
+            promptContainer.classList.remove("hidden");
+            actionContainer.classList.remove("hidden");
+        } else {
+            promptContainer.classList.add("hidden");
+            actionContainer.classList.add("hidden");
+        }
+    });
+
+    queuedJournalImages = []; 
+    
+    imagesInput.addEventListener("change", (e) => {
+        if (e.target.files) {
+            for (let i = 0; i < e.target.files.length; i++) {
+                queuedJournalImages.push(e.target.files[i]);
+            }
+            imageCount.textContent = `${queuedJournalImages.length} images attached`;
+            if (queuedJournalImages.length > 0) clearBtn.classList.remove("hidden");
+            imagesInput.value = "";
+        }
+    });
+
+    clearBtn.addEventListener("click", () => {
+        queuedJournalImages = [];
+        imageCount.textContent = "0 images attached";
+        clearBtn.classList.add("hidden");
+    });
+
+    saveBtn.addEventListener("click", async () => {
+        const text = textarea.value.trim();
+        const words = text.split(/\s+/).filter(w => w.length > 0).length;
+        const files = queuedJournalImages;
+
+        if (words < 500) return alert(`Your entry is ${words} words. A minimum of 500 words is required for Solo Writing.`);
+        if (files.length < 3 || files.length > 10) return alert(`You selected ${files.length} images. You must upload between 3 and 10 images for Journals.`);
+
+        showLoading("Saving journal entry and uploading images. Please wait...");
+        
+        try {
+            const imageFileIds = [];
+            for (let i = 0; i < files.length; i++) {
+                imageFileIds.push(await uploadImageToDrive(files[i]));
+            }
+
+            const newEntry = {
+                date: new Date().toLocaleString(),
+                ageGroup: currentAgeGroup,
+                text: text,
+                images: imageFileIds
+            };
+
+            playerJsonData.journalEntries.push(newEntry);
+            playerJsonData.exp = (playerJsonData.exp || 0) + 10;
+            queuedJournalImages = []; 
+            
+            await saveDriveAppData();
+            hideLoading();
+            
+            document.getElementById("journalModal").classList.add("hidden");
+            await buildHubUI(auth.currentUser);
+            alert("Journal entry saved! +10 EXP awarded.");
+        } catch (err) {
+            console.error(err);
+            hideLoading();
+            alert("Failed to save journal entry. Check console for details.");
+        }
+    });
+}
+
+function attachRpModalListeners() {
+    const currentAgeGroup = getCurrentAgeGroup();
+    const rpLocSelect = document.getElementById("rpLocationSelect");
+    if (!rpLocSelect) return;
+
+    const imvuContainer = document.getElementById("rpImvuLinkContainer");
+    const customLocContainer = document.getElementById("rpCustomLocationContainer");
+    const customLocInput = document.getElementById("rpCustomLocationInput");
+    const actionContainer = document.getElementById("rpActionContainer");
+    const imagesInput = document.getElementById("rpImagesInput");
+    const imageCount = document.getElementById("rpImageCount");
+    const clearBtn = document.getElementById("clearRpImagesBtn");
+    const saveBtn = document.getElementById("saveRpBtn");
+    const textarea = document.getElementById("rpTextarea");
+
+    rpLocSelect.addEventListener("change", (e) => {
+        const val = e.target.value;
+        imvuContainer.classList.add("hidden");
+        customLocContainer.classList.add("hidden");
+        actionContainer.classList.add("hidden");
+
+        if (val === "market") {
+            imvuContainer.classList.remove("hidden");
+            actionContainer.classList.remove("hidden");
+        } else if (val === "other") {
+            customLocContainer.classList.remove("hidden");
+            actionContainer.classList.remove("hidden");
+        }
+    });
+
+    queuedRpImages = []; 
+
+    imagesInput.addEventListener("change", (e) => {
+        if (e.target.files) {
+            for (let i = 0; i < e.target.files.length; i++) {
+                queuedRpImages.push(e.target.files[i]);
+            }
+            imageCount.textContent = `${queuedRpImages.length} images attached`;
+            if (queuedRpImages.length > 0) clearBtn.classList.remove("hidden");
+            imagesInput.value = "";
+        }
+    });
+
+    clearBtn.addEventListener("click", () => {
+        queuedRpImages = [];
+        imageCount.textContent = "0 images attached";
+        clearBtn.classList.add("hidden");
+    });
+
+    saveBtn.addEventListener("click", async () => {
+        const text = textarea.value.trim();
+        const words = text.split(/\s+/).filter(w => w.length > 0).length;
+        const files = queuedRpImages;
+        const locType = rpLocSelect.value;
+        const customLoc = customLocInput.value.trim();
+
+        if (locType === "other" && !customLoc) return alert("Please enter your custom RP location.");
+        if (words < 500) return alert(`Your story is ${words} words. A minimum of 500 words is required for RP Sessions.`);
+        if (files.length < 5 || files.length > 10) return alert(`You selected ${files.length} images. You must upload between 5 and 10 images for RP Sessions.`);
+
+        showLoading("Saving RP session and uploading images. Please wait...");
+        
+        try {
+            const imageFileIds = [];
+            for (let i = 0; i < files.length; i++) {
+                imageFileIds.push(await uploadImageToDrive(files[i]));
+            }
+
+            const newEntry = {
+                date: new Date().toLocaleString(),
+                ageGroup: currentAgeGroup,
+                location: locType === "market" ? "The Brass Market (IMVU)" : customLoc,
+                text: text,
+                images: imageFileIds
+            };
+
+            playerJsonData.rpSessions.push(newEntry);
+            playerJsonData.exp = (playerJsonData.exp || 0) + 10;
+            queuedRpImages = []; 
+            
+            await saveDriveAppData();
+            hideLoading();
+
+            document.getElementById("rpModal").classList.add("hidden");
+            await buildHubUI(auth.currentUser);
+            alert("RP Session submitted! +10 EXP awarded. (Saved to Star Tome data).");
+        } catch (err) {
+            console.error(err);
+            hideLoading();
+            alert("Failed to submit RP session. Check console for details.");
+        }
+    });
+}
+
+function renderJournalModalContent() {
+    const currentAgeGroup = getCurrentAgeGroup();
+    const ageJournalsCount = playerJsonData.journalEntries.filter(e => (e.ageGroup || "2-3") === currentAgeGroup).length;
+    const container = document.getElementById("journalModalContent");
+
+    if (ageJournalsCount >= 5) {
+        container.innerHTML = `
+            <h2 style="margin-top:0; color:#e3d2b9; border-bottom:1px solid #444; padding-bottom:10px; text-align:center;">Solo Journal</h2>
+            <p style="text-align:center; color:#7F522B; font-weight:bold;">Max Journal Entries Completed (5/5) for Age ${currentAgeGroup}</p>
+            <p style="text-align:center; opacity:0.8; font-size:0.9rem;">You have earned the maximum EXP available from solo journaling for your current age group.</p>
+            <button id="closeJournalBottomBtn" style="width:100%; margin-top:20px;">Close</button>
+        `;
+        document.getElementById("closeJournalBottomBtn").addEventListener("click", () => document.getElementById("journalModal").classList.add("hidden"));
+        return;
+    }
+
+    container.innerHTML = `
+        <h2 style="margin-top:0; color:#e3d2b9; border-bottom:1px solid #444; padding-bottom:10px; text-align:center;">Solo Journal</h2>
+        <p style="text-align:center; font-weight:bold; color:#7F522B; margin-top:0;">Age ${currentAgeGroup} Journals Completed: ${ageJournalsCount} / 5</p>
+        <p style="text-align:center; font-size: 0.9rem; opacity: 0.9; margin-bottom: 20px;">
+            Journals are <strong>1st-person</strong> solo writing entries describing your personal experience based on your current age bracket.
+        </p>
+
+        <div id="soloWritingOptions">
+            <label style="font-weight:bold; color:#7F522B;">Choose a Lore Scene:</label>
+            <select id="journalSceneSelect" style="width:100%; padding:10px; margin-top:8px; background:#222; color:#fff; border:1px solid #444; font-family:inherit; border-radius:4px;">
+                <option value="">-- Select Scene --</option>
+                <option value="1">Scene Option 1</option>
+                <option value="2">Scene Option 2</option>
+                <option value="3">Scene Option 3</option>
+            </select>
+        </div>
+
+        <div id="journalPromptContainer" class="hidden" style="margin-top:15px; padding:15px; background:rgba(255,255,255,0.05); border-left:4px solid #7F522B; font-style:italic;"></div>
+
+        <div id="journalActionContainer" class="hidden" style="margin-top:20px;">
+            <div style="font-size:0.9rem; opacity:0.9; margin-bottom:15px;">
+                <strong>Requirements:</strong><br>
+                • 1st-person journal entry (Min 500 words).<br>
+                • Attach 3 to 10 images from your device.
+            </div>
+            
+            <textarea id="journalTextarea" rows="8" style="width:100%; padding:10px; background:#1a1a1a; color:#eee; border:1px solid #444; font-family:inherit; border-radius:4px;" placeholder="Write your first-person journal entry here..."></textarea>
+            
+            <div style="margin-top:15px;">
+                <label style="font-weight:bold; font-size:0.9rem; color:#7F522B;">Attach Images:</label>
+                <input type="file" id="journalImagesInput" accept="image/*" multiple style="width:100%; margin-top:5px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
+                    <span id="journalImageCount" style="font-size:0.85rem; color:#aaa;">0 images attached</span>
+                    <button id="clearJournalImagesBtn" type="button" class="hidden" style="padding:4px 8px; font-size:0.8rem;">Clear Selected</button>
+                </div>
+            </div>
+
+            <button id="saveJournalBtn" style="margin-top:20px; width:100%; border-color:#7F522B; font-weight:bold;">Save Journal Entry (+10 EXP)</button>
+        </div>
+    `;
+
+    attachJournalModalListeners();
+}
+
+function renderRpModalContent() {
+    const currentAgeGroup = getCurrentAgeGroup();
+    const ageRpCount = playerJsonData.rpSessions.filter(e => (e.ageGroup || "2-3") === currentAgeGroup).length;
+    const container = document.getElementById("rpModalContent");
+
+    if (ageRpCount >= 5) {
+        container.innerHTML = `
+            <h2 style="margin-top:0; color:#e3d2b9; border-bottom:1px solid #444; padding-bottom:10px; text-align:center;">RP Session</h2>
+            <p style="text-align:center; color:#7F522B; font-weight:bold;">Max RP Sessions Completed (5/5) for Age ${currentAgeGroup}</p>
+            <p style="text-align:center; opacity:0.8; font-size:0.9rem;">You have earned the maximum EXP available from RP sessions for your current age group.</p>
+            <button id="closeRpBottomBtn" style="width:100%; margin-top:20px;">Close</button>
+        `;
+        document.getElementById("closeRpBottomBtn").addEventListener("click", () => document.getElementById("rpModal").classList.add("hidden"));
+        return;
+    }
+
+    container.innerHTML = `
+        <h2 style="margin-top:0; color:#e3d2b9; border-bottom:1px solid #444; padding-bottom:10px; text-align:center;">RP Session</h2>
+        <p style="text-align:center; font-weight:bold; color:#7F522B; margin-top:0;">Age ${currentAgeGroup} RP Sessions Completed: ${ageRpCount} / 5</p>
+        <p style="text-align:center; font-size: 0.9rem; opacity: 0.9; margin-bottom: 20px;">
+            RP Sessions are <strong>3rd-person</strong> stories documenting your live roleplay interactions with other characters.
+        </p>
+
+        <div>
+            <label style="font-weight:bold; color:#7F522B;">Select RP Location:</label>
+            <select id="rpLocationSelect" style="width:100%; padding:10px; margin-top:8px; background:#222; color:#fff; border:1px solid #444; font-family:inherit; border-radius:4px;">
+                <option value="">-- Select Location --</option>
+                <option value="market">The Brass Market (IMVU)</option>
+                <option value="other">Other / Custom Location</option>
+            </select>
+        </div>
+
+        <div id="rpImvuLinkContainer" class="hidden" style="margin-top:15px; text-align:center;">
+            <p style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 10px;">Click below to open IMVU and enter the public RP room.</p>
+            <a href="https://go.imvu.com/chat/room-184439344-7012" target="_blank" style="display:inline-block; border: 1px solid #7F522B; background:#222; color:#e3d2b9; padding:10px 20px; font-weight:bold; border-radius:6px; text-decoration:none;">Launch The Brass Market Room</a>
+        </div>
+
+        <div id="rpCustomLocationContainer" class="hidden" style="margin-top:15px;">
+            <input type="text" id="rpCustomLocationInput" placeholder="Enter your RP Location..." style="width:100%; padding:10px; background:#1a1a1a; color:#eee; border:1px solid #444; font-family:inherit; border-radius:4px;">
+        </div>
+
+        <div id="rpActionContainer" class="hidden" style="margin-top:20px;">
+            <div style="font-size:0.9rem; opacity:0.9; margin-bottom:15px;">
+                <strong>Requirements:</strong><br>
+                • 3rd-person story / post (Min 500 words).<br>
+                • Attach 5 to 10 session images.<br>
+                • Images MUST show: (A) Your character's name in a sentence, (B) Your RP partner's name in a sentence, and (C) The word "Stars" in generalized conversation.
+            </div>
+            
+            <textarea id="rpTextarea" rows="8" style="width:100%; padding:10px; background:#1a1a1a; color:#eee; border:1px solid #444; font-family:inherit; border-radius:4px;" placeholder="Write your 3rd-person RP session story here..."></textarea>
+            
+            <div style="margin-top:15px;">
+                <label style="font-weight:bold; font-size:0.9rem; color:#7F522B;">Attach Images:</label>
+                <input type="file" id="rpImagesInput" accept="image/*" multiple style="width:100%; margin-top:5px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
+                    <span id="rpImageCount" style="font-size:0.85rem; color:#aaa;">0 images attached</span>
+                    <button id="clearRpImagesBtn" type="button" class="hidden" style="padding:4px 8px; font-size:0.8rem;">Clear Selected</button>
+                </div>
+            </div>
+
+            <button id="saveRpBtn" style="margin-top:20px; width:100%; border-color:#7F522B; font-weight:bold;">Submit RP Session (+10 EXP)</button>
+        </div>
+    `;
+
+    attachRpModalListeners();
+}
+
 async function renderInventory() {
     const inventoryGrid = document.getElementById("inventoryGrid");
     const items = playerJsonData.inventory || [];
@@ -827,10 +1133,6 @@ async function buildHubUI(user) {
             </div>
         `;
     } else {
-        const currentAgeGroup = getCurrentAgeGroup();
-        const ageJournalsCount = playerJsonData.journalEntries.filter(e => (e.ageGroup || "2-3") === currentAgeGroup).length;
-        const ageRpCount = playerJsonData.rpSessions.filter(e => (e.ageGroup || "2-3") === currentAgeGroup).length;
-
         let availableActionsHTML = "";
 
         if (playerJsonData.exp >= 500) {
@@ -851,130 +1153,15 @@ async function buildHubUI(user) {
                     <button id="openSchoolBtn" style="border-color: #7F522B; color: #e3d2b9; padding: 12px 20px; font-weight: bold; width: 100%; max-width: 400px;">School</button>
                 </div>
             </details>
+            
+            <details class="hub-dropdown">
+                <summary>Experiences</summary>
+                <div class="dropdown-content" style="text-align:center; display: flex; flex-direction: column; gap: 15px; align-items: center;">
+                    <button id="openJournalBtn" style="border-color: #7F522B; color: #e3d2b9; padding: 12px 20px; font-weight: bold; width: 100%; max-width: 400px;">Journal</button>
+                    <button id="openRpBtn" style="border-color: #7F522B; color: #e3d2b9; padding: 12px 20px; font-weight: bold; width: 100%; max-width: 400px;">RP Session</button>
+                </div>
+            </details>
         `;
-
-        // JOURNAL SECTION
-        if (ageJournalsCount >= 5) {
-            availableActionsHTML += `
-                <details class="hub-dropdown">
-                    <summary>Journal (Experiences)</summary>
-                    <div class="dropdown-content" style="text-align:center;">
-                        <p style="color:#7F522B; font-weight:bold;">Max Journal Entries Completed (5/5) for Age ${currentAgeGroup}</p>
-                        <p style="opacity:0.8; font-size:0.9rem;">You have earned the maximum EXP available from solo journaling for your current age group.</p>
-                    </div>
-                </details>
-            `;
-        } else {
-            availableActionsHTML += `
-                <details class="hub-dropdown">
-                    <summary>Journal (Experiences)</summary>
-                    <div class="dropdown-content">
-                        <p style="text-align:center; font-weight:bold; color:#7F522B; margin-top:0;">Age ${currentAgeGroup} Journals Completed: ${ageJournalsCount} / 5</p>
-                        <p style="text-align:center; font-size: 0.9rem; opacity: 0.9; margin-bottom: 20px;">
-                            Journals are <strong>1st-person</strong> solo writing entries describing your personal experience based on your current age bracket.
-                        </p>
-
-                        <div id="soloWritingOptions">
-                            <label style="font-weight:bold; color:#7F522B;">Choose a Lore Scene:</label>
-                            <select id="journalSceneSelect" style="width:100%; padding:10px; margin-top:8px; background:#222; color:#fff; border:1px solid #444; font-family:inherit; border-radius:4px;">
-                                <option value="">-- Select Scene --</option>
-                                <option value="1">Scene Option 1</option>
-                                <option value="2">Scene Option 2</option>
-                                <option value="3">Scene Option 3</option>
-                            </select>
-                        </div>
-
-                        <div id="journalPromptContainer" class="hidden" style="margin-top:15px; padding:15px; background:rgba(255,255,255,0.05); border-left:4px solid #7F522B; font-style:italic;"></div>
-
-                        <div id="journalActionContainer" class="hidden" style="margin-top:20px;">
-                            <div style="font-size:0.9rem; opacity:0.9; margin-bottom:15px;">
-                                <strong>Requirements:</strong><br>
-                                • 1st-person journal entry (Min 500 words).<br>
-                                • Attach 3 to 10 images from your device.
-                            </div>
-                            
-                            <textarea id="journalTextarea" rows="8" style="width:100%; padding:10px; background:#1a1a1a; color:#eee; border:1px solid #444; font-family:inherit; border-radius:4px;" placeholder="Write your first-person journal entry here..."></textarea>
-                            
-                            <div style="margin-top:15px;">
-                                <label style="font-weight:bold; font-size:0.9rem; color:#7F522B;">Attach Images:</label>
-                                <input type="file" id="journalImagesInput" accept="image/*" multiple style="width:100%; margin-top:5px;">
-                                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
-                                    <span id="journalImageCount" style="font-size:0.85rem; color:#aaa;">0 images attached</span>
-                                    <button id="clearJournalImagesBtn" type="button" class="hidden" style="padding:4px 8px; font-size:0.8rem;">Clear Selected</button>
-                                </div>
-                            </div>
-
-                            <button id="saveJournalBtn" style="margin-top:20px; width:100%; border-color:#7F522B; font-weight:bold;">Save Journal Entry (+10 EXP)</button>
-                        </div>
-                    </div>
-                </details>
-            `;
-        }
-
-        // RP SESSION SECTION
-        if (ageRpCount >= 5) {
-            availableActionsHTML += `
-                <details class="hub-dropdown">
-                    <summary>RP Session (Experiences)</summary>
-                    <div class="dropdown-content" style="text-align:center;">
-                        <p style="color:#7F522B; font-weight:bold;">Max RP Sessions Completed (5/5) for Age ${currentAgeGroup}</p>
-                        <p style="opacity:0.8; font-size:0.9rem;">You have earned the maximum EXP available from RP sessions for your current age group.</p>
-                    </div>
-                </details>
-            `;
-        } else {
-            availableActionsHTML += `
-                <details class="hub-dropdown">
-                    <summary>RP Session (Experiences)</summary>
-                    <div class="dropdown-content">
-                        <p style="text-align:center; font-weight:bold; color:#7F522B; margin-top:0;">Age ${currentAgeGroup} RP Sessions Completed: ${ageRpCount} / 5</p>
-                        <p style="text-align:center; font-size: 0.9rem; opacity: 0.9; margin-bottom: 20px;">
-                            RP Sessions are <strong>3rd-person</strong> stories documenting your live roleplay interactions with other characters.
-                        </p>
-
-                        <div>
-                            <label style="font-weight:bold; color:#7F522B;">Select RP Location:</label>
-                            <select id="rpLocationSelect" style="width:100%; padding:10px; margin-top:8px; background:#222; color:#fff; border:1px solid #444; font-family:inherit; border-radius:4px;">
-                                <option value="">-- Select Location --</option>
-                                <option value="market">The Brass Market (IMVU)</option>
-                                <option value="other">Other / Custom Location</option>
-                            </select>
-                        </div>
-
-                        <div id="rpImvuLinkContainer" class="hidden" style="margin-top:15px; text-align:center;">
-                            <p style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 10px;">Click below to open IMVU and enter the public RP room.</p>
-                            <a href="https://go.imvu.com/chat/room-184439344-7012" target="_blank" style="display:inline-block; border: 1px solid #7F522B; background:#222; color:#e3d2b9; padding:10px 20px; font-weight:bold; border-radius:6px; text-decoration:none;">Launch The Brass Market Room</a>
-                        </div>
-
-                        <div id="rpCustomLocationContainer" class="hidden" style="margin-top:15px;">
-                            <input type="text" id="rpCustomLocationInput" placeholder="Enter your RP Location..." style="width:100%; padding:10px; background:#1a1a1a; color:#eee; border:1px solid #444; font-family:inherit; border-radius:4px;">
-                        </div>
-
-                        <div id="rpActionContainer" class="hidden" style="margin-top:20px;">
-                            <div style="font-size:0.9rem; opacity:0.9; margin-bottom:15px;">
-                                <strong>Requirements:</strong><br>
-                                • 3rd-person story / post (Min 500 words).<br>
-                                • Attach 5 to 10 session images.<br>
-                                • Images MUST show: (A) Your character's name in a sentence, (B) Your RP partner's name in a sentence, and (C) The word "Stars" in generalized conversation.
-                            </div>
-                            
-                            <textarea id="rpTextarea" rows="8" style="width:100%; padding:10px; background:#1a1a1a; color:#eee; border:1px solid #444; font-family:inherit; border-radius:4px;" placeholder="Write your 3rd-person RP session story here..."></textarea>
-                            
-                            <div style="margin-top:15px;">
-                                <label style="font-weight:bold; font-size:0.9rem; color:#7F522B;">Attach Images:</label>
-                                <input type="file" id="rpImagesInput" accept="image/*" multiple style="width:100%; margin-top:5px;">
-                                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
-                                    <span id="rpImageCount" style="font-size:0.85rem; color:#aaa;">0 images attached</span>
-                                    <button id="clearRpImagesBtn" type="button" class="hidden" style="padding:4px 8px; font-size:0.8rem;">Clear Selected</button>
-                                </div>
-                            </div>
-
-                            <button id="saveRpBtn" style="margin-top:20px; width:100%; border-color:#7F522B; font-weight:bold;">Submit RP Session (+10 EXP)</button>
-                        </div>
-                    </div>
-                </details>
-            `;
-        }
 
         actionsContainer.innerHTML = availableActionsHTML;
         
@@ -992,170 +1179,19 @@ async function buildHubUI(user) {
             });
         }
 
-        // Attach Journal Listeners
-        const journalSceneSelect = document.getElementById("journalSceneSelect");
-        if (journalSceneSelect) {
-            const promptContainer = document.getElementById("journalPromptContainer");
-            const actionContainer = document.getElementById("journalActionContainer");
-            const imagesInput = document.getElementById("journalImagesInput");
-            const imageCount = document.getElementById("journalImageCount");
-            const clearBtn = document.getElementById("clearJournalImagesBtn");
-            const saveBtn = document.getElementById("saveJournalBtn");
-            const textarea = document.getElementById("journalTextarea");
-
-            journalSceneSelect.addEventListener("change", (e) => {
-                const val = e.target.value;
-                if (val && journalPromptsByAge[currentAgeGroup][val]) {
-                    promptContainer.innerHTML = `<strong>Scene Prompt:</strong><br>${journalPromptsByAge[currentAgeGroup][val]}`;
-                    promptContainer.classList.remove("hidden");
-                    actionContainer.classList.remove("hidden");
-                } else {
-                    promptContainer.classList.add("hidden");
-                    actionContainer.classList.add("hidden");
-                }
-            });
-
-            imagesInput.addEventListener("change", (e) => {
-                if (e.target.files) {
-                    for (let i = 0; i < e.target.files.length; i++) {
-                        queuedJournalImages.push(e.target.files[i]);
-                    }
-                    imageCount.textContent = `${queuedJournalImages.length} images attached`;
-                    if (queuedJournalImages.length > 0) clearBtn.classList.remove("hidden");
-                    imagesInput.value = "";
-                }
-            });
-
-            clearBtn.addEventListener("click", () => {
-                queuedJournalImages = [];
-                imageCount.textContent = "0 images attached";
-                clearBtn.classList.add("hidden");
-            });
-
-            saveBtn.addEventListener("click", async () => {
-                const text = textarea.value.trim();
-                const words = text.split(/\s+/).filter(w => w.length > 0).length;
-                const files = queuedJournalImages;
-
-                if (words < 500) return alert(`Your entry is ${words} words. A minimum of 500 words is required for Solo Writing.`);
-                if (files.length < 3 || files.length > 10) return alert(`You selected ${files.length} images. You must upload between 3 and 10 images for Journals.`);
-
-                showLoading("Saving journal entry and uploading images. Please wait...");
-                
-                try {
-                    const imageFileIds = [];
-                    for (let i = 0; i < files.length; i++) {
-                        imageFileIds.push(await uploadImageToDrive(files[i]));
-                    }
-
-                    const newEntry = {
-                        date: new Date().toLocaleString(),
-                        ageGroup: currentAgeGroup,
-                        text: text,
-                        images: imageFileIds
-                    };
-
-                    playerJsonData.journalEntries.push(newEntry);
-                    playerJsonData.exp = (playerJsonData.exp || 0) + 10;
-                    queuedJournalImages = []; 
-                    
-                    await saveDriveAppData();
-                    hideLoading();
-                    await buildHubUI(auth.currentUser);
-                    alert("Journal entry saved! +10 EXP awarded.");
-                } catch (err) {
-                    console.error(err);
-                    hideLoading();
-                    alert("Failed to save journal entry. Check console for details.");
-                }
+        const openJournalBtn = document.getElementById("openJournalBtn");
+        if (openJournalBtn) {
+            openJournalBtn.addEventListener("click", () => {
+                renderJournalModalContent();
+                document.getElementById("journalModal").classList.remove("hidden");
             });
         }
 
-        // Attach RP Listeners
-        const rpLocSelect = document.getElementById("rpLocationSelect");
-        if (rpLocSelect) {
-            const imvuContainer = document.getElementById("rpImvuLinkContainer");
-            const customLocContainer = document.getElementById("rpCustomLocationContainer");
-            const customLocInput = document.getElementById("rpCustomLocationInput");
-            const actionContainer = document.getElementById("rpActionContainer");
-            const imagesInput = document.getElementById("rpImagesInput");
-            const imageCount = document.getElementById("rpImageCount");
-            const clearBtn = document.getElementById("clearRpImagesBtn");
-            const saveBtn = document.getElementById("saveRpBtn");
-            const textarea = document.getElementById("rpTextarea");
-
-            rpLocSelect.addEventListener("change", (e) => {
-                const val = e.target.value;
-                imvuContainer.classList.add("hidden");
-                customLocContainer.classList.add("hidden");
-                actionContainer.classList.add("hidden");
-
-                if (val === "market") {
-                    imvuContainer.classList.remove("hidden");
-                    actionContainer.classList.remove("hidden");
-                } else if (val === "other") {
-                    customLocContainer.classList.remove("hidden");
-                    actionContainer.classList.remove("hidden");
-                }
-            });
-
-            imagesInput.addEventListener("change", (e) => {
-                if (e.target.files) {
-                    for (let i = 0; i < e.target.files.length; i++) {
-                        queuedRpImages.push(e.target.files[i]);
-                    }
-                    imageCount.textContent = `${queuedRpImages.length} images attached`;
-                    if (queuedRpImages.length > 0) clearBtn.classList.remove("hidden");
-                    imagesInput.value = "";
-                }
-            });
-
-            clearBtn.addEventListener("click", () => {
-                queuedRpImages = [];
-                imageCount.textContent = "0 images attached";
-                clearBtn.classList.add("hidden");
-            });
-
-            saveBtn.addEventListener("click", async () => {
-                const text = textarea.value.trim();
-                const words = text.split(/\s+/).filter(w => w.length > 0).length;
-                const files = queuedRpImages;
-                const locType = rpLocSelect.value;
-                const customLoc = customLocInput.value.trim();
-
-                if (locType === "other" && !customLoc) return alert("Please enter your custom RP location.");
-                if (words < 500) return alert(`Your story is ${words} words. A minimum of 500 words is required for RP Sessions.`);
-                if (files.length < 5 || files.length > 10) return alert(`You selected ${files.length} images. You must upload between 5 and 10 images for RP Sessions.`);
-
-                showLoading("Saving RP session and uploading images. Please wait...");
-                
-                try {
-                    const imageFileIds = [];
-                    for (let i = 0; i < files.length; i++) {
-                        imageFileIds.push(await uploadImageToDrive(files[i]));
-                    }
-
-                    const newEntry = {
-                        date: new Date().toLocaleString(),
-                        ageGroup: currentAgeGroup,
-                        location: locType === "market" ? "The Brass Market (IMVU)" : customLoc,
-                        text: text,
-                        images: imageFileIds
-                    };
-
-                    playerJsonData.rpSessions.push(newEntry);
-                    playerJsonData.exp = (playerJsonData.exp || 0) + 10;
-                    queuedRpImages = []; 
-                    
-                    await saveDriveAppData();
-                    hideLoading();
-                    await buildHubUI(auth.currentUser);
-                    alert("RP Session submitted! +10 EXP awarded. (Saved to Star Tome data).");
-                } catch (err) {
-                    console.error(err);
-                    hideLoading();
-                    alert("Failed to submit RP session. Check console for details.");
-                }
+        const openRpBtn = document.getElementById("openRpBtn");
+        if (openRpBtn) {
+            openRpBtn.addEventListener("click", () => {
+                renderRpModalContent();
+                document.getElementById("rpModal").classList.remove("hidden");
             });
         }
     }
@@ -1336,6 +1372,14 @@ closeSchoolBtn.addEventListener("click", () => {
     schoolModal.classList.add("hidden");
 });
 
+document.getElementById("closeJournalBtn").addEventListener("click", () => {
+    document.getElementById("journalModal").classList.add("hidden");
+});
+
+document.getElementById("closeRpBtn").addEventListener("click", () => {
+    document.getElementById("rpModal").classList.add("hidden");
+});
+
 closeItemModalBtn.addEventListener("click", () => {
     itemModal.classList.add("hidden");
 });
@@ -1363,6 +1407,18 @@ itemModal.addEventListener("click", (e) => {
 memberCardModal.addEventListener("click", (e) => {
     if (e.target === memberCardModal) {
         memberCardModal.classList.add("hidden");
+    }
+});
+
+document.getElementById("journalModal").addEventListener("click", (e) => {
+    if (e.target === document.getElementById("journalModal")) {
+        document.getElementById("journalModal").classList.add("hidden");
+    }
+});
+
+document.getElementById("rpModal").addEventListener("click", (e) => {
+    if (e.target === document.getElementById("rpModal")) {
+        document.getElementById("rpModal").classList.add("hidden");
     }
 });
 
