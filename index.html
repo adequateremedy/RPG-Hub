@@ -2,218 +2,138 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solus Dynasty RPG — Hub</title>
-    <link rel="stylesheet" href="css/hub.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Class 1: Runic-Fally</title>
+    <link rel="stylesheet" href="css/runic-fally.css?v=16">
 </head>
 <body>
 
-<div id="app">
+    <canvas id="fxCanvas" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9999;"></canvas>
 
-    <!-- LOGIN SCREEN -->
-    <section id="loginScreen">
-        <h1>Solus Dynasty RPG</h1>
-        <p class="subtitle">RPG Hub</p>
-        <p>Sign in with your Google account to securely save and access your RPG progress directly on your personal Google Drive.</p>
-        <button id="googleSignInButton" type="button">Sign in with Google</button>
-        <p id="errorMessage" class="hidden"></p>
-    </section>
-
-    <!-- LOADING SCREEN -->
-    <section id="loadingScreen" class="hidden">
-        <p>Loading your RPG data from Google Drive...</p>
-        <p id="loadingStatusText" style="font-size: 0.85rem; opacity: 0.7; margin-top: 10px;"></p>
-    </section>
-
-    <!-- PLAYER HUB -->
-    <section id="playerScreen" class="hidden">
-
-        <div class="player-header">
-            <div>
-                <span id="headerPlayerEmail" style="opacity:0.8; font-size: 1.1rem;"></span>
-            </div>
-            <button id="signOutButton" type="button">Sign Out</button>
+    <div id="loadingScreen">
+        <p>Syncing Desk with Google Drive...</p>
+        <p id="loadingMsg"></p>
+        <div id="progressBarContainer" class="hidden">
+            <div id="progressBarFill"></div>
         </div>
+        <div id="loadingPercent" class="hidden">0%</div>
+    </div>
 
-        <!-- TIER 1: STAR SELECTION -->
-        <div class="tabs tier-1">
-            <div class="tab-group">
-                <button class="tab-btn active" data-target="star-1">
-                    <span id="star-name-display">Star 1</span>
-                </button>
-                <button id="edit-star-name-btn" class="icon-btn" title="Rename Star">✎</button>
-            </div>
-        </div>
-
-        <div id="edit-star-container" class="hidden" style="margin-bottom: 20px; display:flex; gap:10px; max-width: 300px;">
-            <input type="text" id="edit-star-input" placeholder="Name your Star" style="padding:5px; flex:1; font-family: inherit;">
-            <button id="save-star-btn" type="button" style="padding:5px 15px;">Save</button>
-        </div>
-
-        <!-- TIER 2: GENERATION SELECTION -->
-        <div class="tabs tier-2">
-            <button class="tab-btn active" data-target="gen-1"><span id="gen-1-name">Gen 1 - Steampunk</span></button>
-            <button class="tab-btn disabled" disabled>Gen 2 - UnCourted</button>
-            <button class="tab-btn disabled" disabled>Gen 3 - Wynter</button>
-            <button class="tab-btn disabled" disabled>Gen 4 - Apocalypse</button>
-            <button class="tab-btn disabled" disabled>Gen 5 - Indigo</button>
-            <button class="tab-btn disabled" disabled>Star - Zenith</button>
-        </div>
-
-        <!-- TIER 3: SECTION SELECTION -->
-        <div class="tabs tier-3">
-            <button class="tab-btn active" data-target="tab-character">Character Card</button>
-            <button class="tab-btn" data-target="tab-available">Available</button>
-            <button class="tab-btn" data-target="tab-inventory">Inventory</button>
-            <button class="tab-btn" data-target="tab-journal">Journal</button>
-            <button class="tab-btn" data-target="tab-gallery">Gallery</button>
-            <button class="tab-btn" data-target="tab-members" id="tab-members-btn">Members</button>
-        </div>
-
-        <!-- CHARACTER CARD TAB -->
-        <div id="tab-character" class="hub-section active">
-            
-            <div class="card-container">
-                <!-- Portrait -->
-                <div id="ui-portrait-container">
-                    <img id="ui-portrait-img" src="" alt="">
-                    <button id="ui-portrait-upload-btn" class="hidden">Upload Image</button>
-                    <input type="file" id="portrait-file-input" accept="image/*" class="hidden">
-                </div>
-
-                <div id="ui-name" class="abs-stat">Unborn</div>
+    <div id="welcomeScreen" class="hidden">
+        <h1>Eidolon School</h1>
+        <p class="subtitle">Class 1: Runic-Fally (Ages 2-3)</p>
+        
+        <div id="newPlayerPanel" class="hidden">
+            <div class="instructions-panel">
+                <p>Welcome to Eidolon's School for the Gifted, little one.</p>
+                <p>I am sure you have already felt it—that unique Energy inside you. Even at such a young age, that Energy follows you, making connections and growing right alongside you.</p>
+                <p>In Runic-Fally, I teach our youngest Fae how to guide that Energy. Using just that sparkle in your fingertip, you will link matching Runic Stones together. As you drag your finger across them, the ancient symbols will glow white. Release your touch, and collect the chain to earn points toward your grade!</p>
+                <p>In order to pass this class successfully, you must gather 2,000 points.</p>
+                <p>But be mindful, little one: every new round introduces a brand new Runic Symbol to the board. The more Rounds it takes you, the harder it will become to see the connections. If the board becomes too difficult, you may be forced to restart the class from the beginning.</p>
                 
-                <div id="edit-name-container" class="hidden">
-                    <input type="text" id="edit-name-input" placeholder="Enter Character Name">
-                    <button id="save-name-btn" type="button">Save</button>
-                </div>
-
-                <div id="ui-lvl-container">
-                    <div class="lvl-label">Lvl</div>
-                    <div id="ui-lvl">1</div>
-                </div>
-                
-                <div id="ui-exp-container">
-                    <div class="exp-label">EXP</div>
-                    <div id="ui-exp">0</div>
-                </div>
-
-                <div class="stat-group">
-                    <div class="stat-label">Bloodline Court:</div>
-                    <div class="stat-val abs-stat-text" id="ui-bloodline">---</div>
-
-                    <div class="stat-label">Birth Court:</div>
-                    <div class="stat-val abs-stat-text" id="ui-birthcourt">---</div>
-
-                    <div class="stat-label">Essence Type:</div>
-                    <div class="stat-val abs-stat-text" id="ui-essence">---</div>
-
-                    <div class="stat-label">Trigger:</div>
-                    <div class="stat-val abs-stat-text" id="ui-trigger">---</div>
-
-                    <div class="power-section">Magic Power</div>
-
-                    <div class="stat-label">Offensive: <span id="ui-off-name" style="font-weight:normal;">---</span></div>
-                    <div class="stat-val">DMG: <span id="ui-off-dmg">---</span></div>
-
-                    <div class="stat-label">Defensive: <span id="ui-def-name" style="font-weight:normal;">---</span></div>
-                    <div class="stat-val">HP: <span id="ui-def-hp">---</span></div>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- AVAILABLE TAB -->
-        <div id="tab-available" class="hub-section">
-            <h2 style="text-align:center; margin-top:20px;">Available Actions</h2>
-            <div id="actionsContainer" style="margin-top:20px; display:flex; flex-direction:column; align-items:center;"></div>
-        </div>
-
-        <!-- INVENTORY TAB -->
-        <div id="tab-inventory" class="hub-section">
-            <h2 style="text-align:center; margin-top:40px;">Inventory</h2>
-            <div id="inventoryGrid" class="inventory-grid">
-                <p style="text-align:center; opacity:0.7; grid-column: 1 / -1;">Your inventory is empty.</p>
-            </div>
-        </div>
-
-        <!-- JOURNAL TAB -->
-        <div id="tab-journal" class="hub-section">
-            <h2 style="text-align:center; margin-top:40px;">Journal</h2>
-            <div id="journalEntriesContainer" style="margin-top:20px;">
-                <p style="text-align:center; opacity:0.7;">No journal entries yet.</p>
-            </div>
-        </div>
-
-        <!-- GALLERY TAB -->
-        <div id="tab-gallery" class="hub-section">
-            <h2 style="text-align:center; margin-top:40px;">Gallery</h2>
-            <div style="max-width: 500px; margin: 0 auto; text-align: left;">
-                <ul id="galleryListContainer" class="gallery-list">
-                    <p style="text-align:center; opacity:0.7;">No gallery images found.</p>
+                <h3 style="margin-top: 20px;">Making Runic Stone Chains:</h3>
+                <ul>
+                    <li>You must connect 3 or more matching stones to form a chain. The larger the chain, the more points you'll collect!</li>
+                    <li>3 Stones = 1 pt</li>
+                    <li>4 Stones = 5 pts</li>
+                    <li>5 Stones = 10 pts</li>
+                    <li>6+ Stones = 20 pts</li>
                 </ul>
+
+                <h3 style="margin-top: 20px;">Star's Energy:</h3>
+                <p>Anytime you collect a chain of 4 or more, you will earn a Star. If you collect 3 Regular Stars, they automatically merge into a powerful <strong>Big Star</strong>! Collect 3 Big Stars, and they forge a massive <strong>Giant Star</strong>.</p>
+                <p>You may tap any of your Star buttons and swap it with any stone on the board. To activate it, simply tap it one more time to release a brilliant burst of Energy, destroying nearby Runic Stones for points!</p>
+                
+                <p style="margin-top: 20px; font-style: italic; opacity: 0.8;">Do not fret if you need to rest; your progress is safely anchored at the end of every Round, allowing you to leave and return without losing your place.</p>
+            </div>
+            <button id="startClassBtn">Start Class</button>
+        </div>
+
+        <div id="returningPlayerPanel" class="hidden">
+            <div class="instructions-panel" style="text-align: center;">
+                <h3>Welcome Back!</h3>
+                <p>Your previous progress was securely saved.</p>
+                <h2 style="margin: 15px 0 5px 0;">Current Grade: <span id="welcomeGrade">F</span></h2>
+                <p style="font-size: 0.85rem; opacity: 0.8; margin-top: 0;">Class Progress: <span id="welcomePercent">0</span>%</p>
+                <p style="color: #d1c5b4; font-size: 0.85rem; margin-top: 15px;">(Reminder: 2,000 points are required to pass with an A+)</p>
+            </div>
+            <button id="continueClassBtn">Continue Class</button>
+        </div>
+        
+        <button id="hubRedirectBtn" style="margin-top: 20px; background: transparent; border: none; font-size: 0.8rem; text-decoration: underline;">Return to Hub</button>
+    </div>
+
+    <div id="gameUI" class="hidden">
+        <div class="header-bar">
+            <div class="stat-box">
+                <div class="stat-label">Round</div>
+                <div class="stat-value" id="uiRound">1</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Round Score</div>
+                <div class="stat-value" id="uiScore">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Time</div>
+                <div class="stat-value" id="uiTime">60</div>
             </div>
         </div>
 
-        <!-- MEMBERS TAB -->
-        <div id="tab-members" class="hub-section">
-            <h2 style="text-align:center; margin-top:20px; color:#e3d2b9;">Top 50 Members</h2>
-            <table class="members-table">
-                <thead>
-                    <tr>
-                        <th style="width: 10%; text-align: center;">Rank</th>
-                        <th style="width: 40%;">Character</th>
-                        <th style="width: 15%; text-align: center;">Level</th>
-                        <th style="width: 15%; text-align: center;">EXP</th>
-                        <th style="width: 20%; text-align: center;">Era</th>
-                    </tr>
-                </thead>
-                <tbody id="membersTableBody">
-                    <tr>
-                        <td colspan="5" style="text-align:center; padding:20px; opacity:0.6;">Loading members...</td>
-                    </tr>
-                </tbody>
-            </table>
+        <div id="inventoryBar">
+            <div id="starControls">
+                <button id="btnStarReg" class="star-btn" disabled>
+                    <img src="assets/Star/Star-Symbol.png" alt="Star"> <span id="countReg">0</span>
+                </button>
+                <button id="btnStarBig" class="star-btn" style="color: #66ffff;" disabled>
+                    <img src="assets/Star/Star-Symbol.png" alt="Big Star"> <span id="countBig">0</span>
+                </button>
+                <button id="btnStarGiant" class="star-btn" style="color: #ff66ff;" disabled>
+                    <img src="assets/Star/Star-Symbol.png" alt="Giant Star"> <span id="countGiant">0</span>
+                </button>
+            </div>
+            <div id="totalPointsDisplay" style="font-size: 0.9rem; color: #e3d2b9; font-weight: bold;">
+                Total Points: <span id="uiTotalPoints">0</span>
+            </div>
         </div>
 
-    </section>
-
-</div>
-
-<!-- SCHOOL MODAL -->
-<div id="schoolModal" class="modal-overlay hidden">
-    <div class="modal-box">
-        <h2 style="margin-top:0; color:#e3d2b9; border-bottom:1px solid #444; padding-bottom:10px;">Eidolon School</h2>
-        <ul class="class-list">
-            <li><span id="chk-class1">[ ]</span> Class 1: <span id="name-class1">Runic-Fally</span> (Ages 2-3)</li>
-            <li><span id="chk-class2">[ ]</span> Class 2: Trade & Tally (Ages 4-5)</li>
-            <li><span id="chk-class3">[ ]</span> Class 3: Hearth Cooking (Ages 6-7)</li>
-            <li><span id="chk-class4">[ ]</span> Class 4: Alchemy Foundations (Ages 8-9)</li>
-            <li><span id="chk-class5">[ ]</span> Class 5: Gearcraft Basics (Ages 10-11)</li>
-        </ul>
-        <button id="closeSchoolBtn" style="width:100%;">Close</button>
+        <div id="canvasContainer">
+            <canvas id="gameCanvas"></canvas>
+        </div>
     </div>
-</div>
 
-<!-- ITEM INFO MODAL -->
-<div id="itemModal" class="modal-overlay hidden">
-    <div class="modal-box" style="max-width: 400px;">
-        <h2 id="itemModalName" style="margin-top:0; color:#e3d2b9; border-bottom:1px solid #444; padding-bottom:10px;">Item Name</h2>
-        <p id="itemModalCategory" style="font-size: 0.85rem; color: #aaa; text-transform: uppercase; letter-spacing: 1px; margin-top: -5px;"></p>
-        <img id="itemModalImg" src="" alt="Item" style="width: 100px; height: 100px; margin: 15px auto; display: block; border-radius: 10px; border: 2px solid #7F522B; background-color: #1a1a1a; padding: 5px;">
-        <p id="itemModalDesc" style="font-size: 0.95rem; line-height: 1.6; color: #d1c5b4; margin-bottom: 25px;">Item description goes here.</p>
-        <button id="closeItemModalBtn" style="width:100%;">Close</button>
+    <div id="tallyModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 id="tallyTitle">Time's Up!</h2>
+            
+            <div class="grade-section">
+                <p>Round <span id="tallyRoundNumber"></span> Score: <span id="tallyScore">0</span></p>
+                <h3 style="margin: 10px 0 5px 0;">Current Grade: <span id="tallyGrade">F</span></h3>
+                <p style="font-size: 0.85rem; opacity: 0.8; margin-top: 0;">Class Progress: <span id="tallyPercent">0</span>%</p>
+            </div>
+            
+            <div class="cards-grid" id="tallyCards"></div>
+            
+            <div class="modal-buttons">
+                <button id="nextRoundBtn">Next Round</button>
+                <button id="returnHubBtn">Go Back to Hub</button>
+                <button id="restartClassBtn" class="danger-btn">Restart Class</button>
+            </div>
+        </div>
     </div>
-</div>
 
-<!-- LIGHTBOX MODAL -->
-<div id="lightboxModal" class="lightbox-overlay hidden">
-    <div class="lightbox-content">
-        <button id="lightboxCloseBtn" class="lightbox-close">&times;</button>
-        <img id="lightboxImg" class="lightbox-img" src="" alt="Enlarged View">
+    <div id="completeModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h1 style="color:#e3d2b9; margin-top: 0;">Class Mastered!</h1>
+            <p>You have guided your Energy to connect the Runic Stones beautifully, little one. You have collected 2,000 points, and earned an A+!</p>
+            <p>I've been watching your connections closely. Across all Rounds, your unique Energy resonated most deeply with the <strong id="winningRuneName" style="color:#7F522B;"></strong> Runic Stone. As a reward for your dedication, I am gifting this Runic Stone to you.</p>
+            <img id="winningRuneImg" src="" alt="Winning Runic Stone" style="width: 80px; height: 80px; margin: 15px auto; display: block; border-radius: 10px; border: 2px solid #7F522B; background-color: #1a1a1a; padding: 5px;">
+            <div class="modal-buttons">
+                <button id="saveGraduateBtn" style="background:#4caf50; border-color:#4caf50; color:#fff;">Lock in Grade & Claim Stone (+100 EXP)</button>
+                <button id="retakeGraduateBtn" class="danger-btn">Retake Class</button>
+            </div>
+        </div>
     </div>
-</div>
 
-<script type="module" src="js/hub.js"></script>
+    <script type="module" src="js/runic-fally.js?v=16"></script>
 </body>
 </html>
