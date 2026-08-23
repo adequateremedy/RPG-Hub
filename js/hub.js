@@ -24,6 +24,7 @@ provider.addScope('https://www.googleapis.com/auth/drive.appdata');
 provider.setCustomParameters({ prompt: 'consent' });
 
 // Global state
+const CURRENT_HUB_VERSION = "1.0.3";
 let gDriveToken = sessionStorage.getItem("gDriveToken") || null;
 let dataFileId = null;
 let playerJsonData = {};
@@ -81,19 +82,19 @@ const elementsToUpdate = {
 const SYSTEM_UPDATES = [
     {
         id: "update_003_updates_tab",
-        title: "New Updates Folder",
+        title: "v1.0.3 - New Updates Folder",
         date: "August 2026",
         content: "We have introduced this new Updates folder attached directly to your Star! As the Solus Dynasty Universe continues to grow, this space will serve as your central notification hub for all patch notes, mechanic changes, and system resets across all Eras and Generations. You can safely leave messages here for reference, or check the box and delete them to keep your feed clean."
     },
     {
         id: "update_002_members",
-        title: "Public Member Cards & Portraits",
+        title: "v1.0.2 - Public Member Cards & Portraits",
         date: "August 2026",
         content: "Our team agreed that it is much more beneficial and engaging for everyone to be able to see each other's characters! You can now click on any player's name in the Members tab to view a public version of their full Character Card, including their magical stats and portrait.\n\n**Action Required:** Because your original image is securely locked inside your private Google Drive, you will need to re-upload it. Please go to your Character Card and click 'Upload Image' again to compress and sync your portrait to our public server."
     },
     {
         id: "update_001_runic",
-        title: "Runic Fally System Upgrade",
+        title: "v1.0.1 - Runic Fally System Upgrade",
         date: "August 2026",
         content: "We have completely overhauled the Runic Fally class mechanics and asset management! The Runic Stones now feature a stunning, interactive white glow that responds to your unique energy when touched. To ensure everyone receives this new interactive asset and benefits from the corrected EXP scaling, all previous Class 1 records have been reset.\n\n**Action Required:** Simply replay the Runic Fally class located in your Available tab, lock in your grade, and claim your upgraded Runic Stone."
     }
@@ -183,7 +184,9 @@ function updateBadge() {
 function renderUpdates() {
     const container = document.getElementById("updatesContainer");
     const deleteBtn = document.getElementById("delete-updates-btn");
+    const versionDisplay = document.getElementById("hub-version-display");
     container.innerHTML = "";
+    versionDisplay.textContent = `Current Hub Version: ${CURRENT_HUB_VERSION}`;
 
     const activeUpdates = SYSTEM_UPDATES.filter(u => !playerJsonData.dismissedUpdates.includes(u.id));
 
