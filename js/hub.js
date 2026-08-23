@@ -106,7 +106,12 @@ async function loadSystemUpdates() {
             }
         });
 
-        validUpdates.sort((a, b) => new Date(b.date) - new Date(a.date));
+        // Sort by Date Descending, then Version Descending
+        validUpdates.sort((a, b) => {
+            const dateDiff = new Date(b.date) - new Date(a.date);
+            if (dateDiff !== 0) return dateDiff;
+            return b.version.localeCompare(a.version, undefined, { numeric: true });
+        });
         
         SYSTEM_UPDATES = validUpdates;
         
