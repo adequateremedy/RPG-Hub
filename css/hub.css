@@ -170,9 +170,9 @@ h1 {
     font-style: italic;
 }
 
-#ui-name { top: 65px; left: 150px; width: 300px; text-align: center; font-size: 1.8rem; }
+#ui-name, #member-name { top: 65px; left: 150px; width: 300px; text-align: center; font-size: 1.8rem; }
 
-#ui-lvl-container {
+#ui-lvl-container, #member-lvl-container {
     position: absolute;
     top: 110px;
     right: 48px;
@@ -193,13 +193,13 @@ h1 {
     font-size: 1.1rem;
     line-height: 1;
 }
-#ui-lvl {
+#ui-lvl, #member-lvl {
     font-size: 1.6rem;
     line-height: 1;
     margin-top: 14px;
 }
 
-#ui-exp-container {
+#ui-exp-container, #member-exp-container {
     position: absolute;
     bottom: 40px;
     left: 260px;
@@ -218,7 +218,7 @@ h1 {
     font-size: 1rem;
     line-height: 1;
 }
-#ui-exp {
+#ui-exp, #member-exp {
     font-size: 1.3rem;
     line-height: 1;
     margin-top: 2px;
@@ -247,7 +247,7 @@ h1 {
     font-weight: bold;
 }
 
-#ui-portrait-container {
+#ui-portrait-container, #member-portrait-container {
     position: absolute;
     top: 150px;
     left: 120px;
@@ -258,7 +258,7 @@ h1 {
     z-index: 0; 
 }
 
-#ui-portrait-img {
+#ui-portrait-img, #member-portrait-img {
     width: 100%;
     height: 100%;
     object-fit: cover;
