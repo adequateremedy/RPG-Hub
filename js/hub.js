@@ -5,6 +5,9 @@ import {
 import { 
     getFirestore, doc, setDoc, collection, query, orderBy, limit, getDocs, serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
+import { 
+    getStorage, ref, uploadBytes, getDownloadURL 
+} from "https://www.gstatic.com/firebasejs/12.17.0/firebase-storage.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAeyOzh9YHaQDMSvn-8-ZyVqXkwY_diL5Y",
@@ -19,6 +22,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const storage = getStorage(app);
 
 const provider = new GoogleAuthProvider();
 provider.addScope('https://www.googleapis.com/auth/drive.appdata');
@@ -61,6 +65,9 @@ const itemModalImg = document.getElementById("itemModalImg");
 const lightboxModal = document.getElementById("lightboxModal");
 const lightboxImg = document.getElementById("lightboxImg");
 const lightboxCloseBtn = document.getElementById("lightboxCloseBtn");
+
+const memberCardModal = document.getElementById("memberCardModal");
+const closeMemberCardBtn = document.getElementById("closeMemberCardBtn");
 
 const elementsToUpdate = {
     "ui-lvl": "level",
@@ -117,6 +124,7 @@ async function syncProfileToFirestore(user) {
     const sName = playerJsonData.starName || "";
     const fullName = sName ? `${charName} ${sName}` : charName;
     
+    // We now sync the entire Character Card profile so it can be viewed by others
     const memberData = {
         googleUid: user.uid,
         email: user.email,
@@ -127,6 +135,15 @@ async function syncProfileToFirestore(user) {
         level: playerJsonData.level || 1,
         exp: playerJsonData.exp || 0,
         era: "Gen 1 - Steampunk",
+        portraitUrl: playerJsonData.portraitUrl || "",
+        bloodlineCourt: playerJsonData.bloodlineCourt || "---",
+        birthCourt: playerJsonData.birthCourt || "---",
+        essenceType: playerJsonData.essenceType || "---",
+        trigger: playerJsonData.trigger || "---",
+        offensiveMagicName: playerJsonData.offensiveMagicName || "---",
+        offensiveMagicDmg: playerJsonData.offensiveMagicDmg || "---",
+        defensiveMagicName: playerJsonData.defensiveMagicName || "---",
+        defensiveMagicHp: playerJsonData.defensiveMagicHp || "---",
         updatedAt: serverTimestamp()
     };
     
@@ -147,29 +164,63 @@ async function loadMembersLeaderboard() {
             membersTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; opacity:0.6;">No members found.</td></tr>`;
             return;
         }
-        let rows = "";
+        
+        membersTableBody.innerHTML = "";
         let rank = 1;
+        
         querySnapshot.forEach((docSnap) => {
             const data = docSnap.data();
             const name = data.fullName || (data.characterName ? `${data.characterName} ${data.starName || ''}`.trim() : "Unborn");
             const lvl = data.level !== undefined ? data.level : 1;
             const exp = data.exp !== undefined ? data.exp : 0;
             const era = data.era || "Gen 1 - Steampunk";
-            rows += `
-                <tr>
-                    <td style="text-align: center;">${rank++}</td>
-                    <td>${name}</td>
-                    <td style="text-align: center;">${lvl}</td>
-                    <td style="text-align: center;">${exp}</td>
-                    <td style="text-align: center;">${era}</td>
-                </tr>
+            
+            const tr = document.createElement("tr");
+            tr.className = "clickable-member-row";
+            tr.innerHTML = `
+                <td style="text-align: center;">${rank++}</td>
+                <td><a href="#" class="member-name-link">${name}</a></td>
+                <td style="text-align: center;">${lvl}</td>
+                <td style="text-align: center;">${exp}</td>
+                <td style="text-align: center;">${era}</td>
             `;
+            
+            // Add click event to open the player's Character Card
+            tr.querySelector('.member-name-link').addEventListener("click", (e) => {
+                e.preventDefault();
+                showMemberCard(data, name);
+            });
+            
+            membersTableBody.appendChild(tr);
         });
-        membersTableBody.innerHTML = rows;
     } catch (err) {
         console.error("Failed to load members:", err);
         membersTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#ffb0b0; padding:20px;">Failed to load leaderboard.</td></tr>`;
     }
+}
+
+function showMemberCard(data, displayName) {
+    document.getElementById("member-name").textContent = displayName;
+    document.getElementById("member-lvl").textContent = data.level || 1;
+    document.getElementById("member-exp").textContent = data.exp || 0;
+    
+    document.getElementById("member-bloodline").textContent = data.bloodlineCourt || "---";
+    document.getElementById("member-birthcourt").textContent = data.birthCourt || "---";
+    document.getElementById("member-essence").textContent = data.essenceType || "---";
+    document.getElementById("member-trigger").textContent = data.trigger || "---";
+    document.getElementById("member-off-name").textContent = data.offensiveMagicName || "---";
+    document.getElementById("member-off-dmg").textContent = data.offensiveMagicDmg || "---";
+    document.getElementById("member-def-name").textContent = data.defensiveMagicName || "---";
+    document.getElementById("member-def-hp").textContent = data.defensiveMagicHp || "---";
+
+    const portraitImg = document.getElementById("member-portrait-img");
+    if (data.portraitUrl) {
+        portraitImg.src = data.portraitUrl;
+    } else {
+        portraitImg.src = "https://via.placeholder.com/170x170/1a1a1a/e3d2b9?text=No+Image";
+    }
+
+    memberCardModal.classList.remove("hidden");
 }
 
 // --- GOOGLE DRIVE API FUNCTIONS ---
@@ -279,7 +330,8 @@ async function getDriveAppData() {
             escapeCompleted: false,
             exp: 0,
             level: 1,
-            portraitId: ""
+            portraitId: "",
+            portraitUrl: ""
         };
         await saveDriveAppData();
     }
@@ -527,7 +579,10 @@ async function buildHubUI(user) {
         }
     }
 
-    if (playerJsonData.portraitId) {
+    // Load Public Firebase URL if it exists, otherwise fall back to Drive ID
+    if (playerJsonData.portraitUrl) {
+        document.getElementById("ui-portrait-img").src = playerJsonData.portraitUrl;
+    } else if (playerJsonData.portraitId) {
         try {
             const imgUrl = await getImageUrl(playerJsonData.portraitId);
             document.getElementById("ui-portrait-img").src = imgUrl;
@@ -565,7 +620,8 @@ async function buildHubUI(user) {
     const isBirthBookComplete = playerJsonData.birthBookCompleted;
     const hasCharacterName = !!playerJsonData.characterName;
     const hasStarName = !!playerJsonData.starName;
-    const hasPortrait = !!playerJsonData.portraitId;
+    // Updated to require portraitUrl (public) or portraitId (legacy)
+    const hasPortrait = !!playerJsonData.portraitUrl || !!playerJsonData.portraitId;
     const isFullySetup = isBirthBookComplete && hasCharacterName && hasStarName && hasPortrait;
     
     if (!isBirthBookComplete) {
@@ -959,15 +1015,19 @@ fileInput.addEventListener("change", async (e) => {
         uploadBtn.disabled = true;
         try {
             const file = e.target.files[0];
-            const fileId = await uploadImageToDrive(file);
-            playerJsonData.portraitId = fileId;
-            await saveDriveAppData();
             
-            const imgUrl = URL.createObjectURL(file);
-            document.getElementById("ui-portrait-img").src = imgUrl;
+            // Upload Portrait to PUBLIC Firebase Storage instead of private Google Drive
+            const storageRef = ref(storage, `portraits/${auth.currentUser.uid}_${file.name}`);
+            await uploadBytes(storageRef, file);
+            const publicUrl = await getDownloadURL(storageRef);
+            
+            playerJsonData.portraitUrl = publicUrl;
+            await saveDriveAppData(); // Syncs to Drive AND Firestore instantly
+            
+            document.getElementById("ui-portrait-img").src = publicUrl;
         } catch (err) {
             console.error("Image upload failed", err);
-            alert("Failed to upload image to Drive.");
+            alert("Failed to upload image to Firebase Storage.");
         }
         uploadBtn.textContent = "Upload Image";
         uploadBtn.disabled = false;
@@ -980,6 +1040,10 @@ closeSchoolBtn.addEventListener("click", () => {
 
 closeItemModalBtn.addEventListener("click", () => {
     itemModal.classList.add("hidden");
+});
+
+closeMemberCardBtn.addEventListener("click", () => {
+    memberCardModal.classList.add("hidden");
 });
 
 // Lightbox close handlers
@@ -996,6 +1060,12 @@ lightboxModal.addEventListener("click", (e) => {
 itemModal.addEventListener("click", (e) => {
     if (e.target === itemModal) {
         itemModal.classList.add("hidden");
+    }
+});
+
+memberCardModal.addEventListener("click", (e) => {
+    if (e.target === memberCardModal) {
+        memberCardModal.classList.add("hidden");
     }
 });
 
