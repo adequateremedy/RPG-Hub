@@ -132,7 +132,9 @@
         <!-- INVENTORY TAB -->
         <div id="tab-inventory" class="hub-section">
             <h2 style="text-align:center; margin-top:40px;">Inventory</h2>
-            <p style="text-align:center; opacity:0.7;">Inventory features coming soon.</p>
+            <div id="inventoryGrid" class="inventory-grid">
+                <p style="text-align:center; opacity:0.7; grid-column: 1 / -1;">Your inventory is empty.</p>
+            </div>
         </div>
 
         <!-- JOURNAL TAB -->
@@ -190,6 +192,17 @@
             <li><span id="chk-class5">[ ]</span> Class 5: Gearcraft Basics (Ages 10-11)</li>
         </ul>
         <button id="closeSchoolBtn" style="width:100%;">Close</button>
+    </div>
+</div>
+
+<!-- ITEM INFO MODAL -->
+<div id="itemModal" class="modal-overlay hidden">
+    <div class="modal-box" style="max-width: 400px;">
+        <h2 id="itemModalName" style="margin-top:0; color:#e3d2b9; border-bottom:1px solid #444; padding-bottom:10px;">Item Name</h2>
+        <p id="itemModalCategory" style="font-size: 0.85rem; color: #aaa; text-transform: uppercase; letter-spacing: 1px; margin-top: -5px;"></p>
+        <img id="itemModalImg" src="" alt="Item" style="width: 100px; height: 100px; margin: 15px auto; display: block; border-radius: 10px; border: 2px solid #7F522B; background-color: #1a1a1a; padding: 5px;">
+        <p id="itemModalDesc" style="font-size: 0.95rem; line-height: 1.6; color: #d1c5b4; margin-bottom: 25px;">Item description goes here.</p>
+        <button id="closeItemModalBtn" style="width:100%;">Close</button>
     </div>
 </div>
 
