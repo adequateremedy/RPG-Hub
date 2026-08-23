@@ -56,6 +56,7 @@ const closeSchoolBtn = document.getElementById("closeSchoolBtn");
 
 const itemModal = document.getElementById("itemModal");
 const closeItemModalBtn = document.getElementById("closeItemModalBtn");
+const itemModalImg = document.getElementById("itemModalImg");
 
 const lightboxModal = document.getElementById("lightboxModal");
 const lightboxImg = document.getElementById("lightboxImg");
@@ -204,7 +205,42 @@ async function getDriveAppData() {
             playerJsonData.inventory = [];
         }
 
-        // AUTO-SANITIZER: Fixes the stacked EXP and inventory duplicate glitches
+        // --- VERSION CONTROL & FORCED WIPE ---
+        if (!playerJsonData.versions) playerJsonData.versions = {};
+        const CURRENT_RUNIC_VERSION = 2; // Version 2 triggers a wipe of old Version 1 glitch data
+
+        if (playerJsonData.versions.runicFally !== CURRENT_RUNIC_VERSION) {
+            // Revoke Class 1 progress and EXP
+            if (playerJsonData.schoolProgress && playerJsonData.schoolProgress.class1) {
+                playerJsonData.schoolProgress.class1 = false;
+                if (playerJsonData.class1ExpAwarded) {
+                    playerJsonData.exp = Math.max(0, (playerJsonData.exp || 0) - 100);
+                    playerJsonData.class1ExpAwarded = false;
+                }
+            }
+            
+            // Wipe Runic Stones from inventory
+            if (playerJsonData.inventory) {
+                playerJsonData.inventory = playerJsonData.inventory.filter(item => item.category !== "Runic Stone");
+            }
+            
+            // Reset all Runic-Fally progress stats
+            playerJsonData.class1Points = 0;
+            playerJsonData.class1Round = 1;
+            playerJsonData.class1Exp = 0;
+            playerJsonData.class1RegularStars = 0;
+            playerJsonData.class1BigStars = 0;
+            playerJsonData.class1GiantStars = 0;
+            if (playerJsonData.class1TotalRunes) {
+                Object.keys(playerJsonData.class1TotalRunes).forEach(k => playerJsonData.class1TotalRunes[k] = 0);
+            }
+            
+            // Update version so this wipe doesn't happen again
+            playerJsonData.versions.runicFally = CURRENT_RUNIC_VERSION;
+            await saveDriveAppData(); // Immediately save the wiped state
+        }
+
+        // AUTO-SANITIZER: Fixes the stacked EXP glitch if they still have too much EXP
         if (playerJsonData.exp > 200) {
             let correctExp = 0;
             if (playerJsonData.birthBookCompleted) correctExp += 50;
@@ -216,7 +252,7 @@ async function getDriveAppData() {
             
             playerJsonData.exp = correctExp;
             
-            // Clean up any duplicate Runic Stones
+            // Clean up any stray duplicate Runic Stones just in case
             const runicStones = playerJsonData.inventory.filter(i => i.category === "Runic Stone");
             if (runicStones.length > 1) {
                 const lastStone = runicStones[runicStones.length - 1];
@@ -234,6 +270,7 @@ async function getDriveAppData() {
             schoolProgress: { class1: false, class2: false, class3: false, class4: false, class5: false },
             journalEntries: [],
             inventory: [],
+            versions: { runicFally: 2 }, // New players automatically get the current version
             comingOfAgeUnlocked: false,
             comingOfAgeCompleted: false,
             traumaUnlocked: false,
@@ -342,11 +379,18 @@ async function renderInventory() {
         div.className = "inventory-item";
         
         let imgUrl = "";
+        let glowImgUrl = "";
+        
         try {
             if (item.imageId) {
                 imgUrl = await getImageUrl(item.imageId);
             } else if (item.image) {
                 imgUrl = item.image;
+            }
+            
+            // Pre-fetch the glowing version URL if it exists
+            if (item.glowImageId) {
+                glowImgUrl = await getImageUrl(item.glowImageId);
             }
         } catch(e) {
             console.error("Failed to load inventory image", e);
@@ -360,7 +404,12 @@ async function renderInventory() {
         div.addEventListener("click", () => {
             document.getElementById("itemModalName").textContent = item.name;
             document.getElementById("itemModalCategory").textContent = item.category || "Item";
-            document.getElementById("itemModalImg").src = imgUrl;
+            
+            // Set the image sources and dataset variables for the hover swap
+            itemModalImg.src = imgUrl;
+            itemModalImg.dataset.normalSrc = imgUrl;
+            itemModalImg.dataset.glowSrc = glowImgUrl; 
+            
             document.getElementById("itemModalDesc").textContent = item.desc || "Item description goes here.";
             document.getElementById("itemModal").classList.remove("hidden");
         });
@@ -947,5 +996,20 @@ lightboxModal.addEventListener("click", (e) => {
 itemModal.addEventListener("click", (e) => {
     if (e.target === itemModal) {
         itemModal.classList.add("hidden");
+    }
+});
+
+// --- HOVER EFFECT FOR INVENTORY MODAL IMAGE ---
+itemModalImg.addEventListener("mouseenter", () => {
+    if (itemModalImg.dataset.glowSrc) {
+        itemModalImg.src = itemModalImg.dataset.glowSrc;
+        itemModalImg.style.cursor = "pointer";
+    }
+});
+
+itemModalImg.addEventListener("mouseleave", () => {
+    if (itemModalImg.dataset.normalSrc) {
+        itemModalImg.src = itemModalImg.dataset.normalSrc;
+        itemModalImg.style.cursor = "default";
     }
 });
