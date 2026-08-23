@@ -1,4 +1,3 @@
-import { CURRENT_HUB_VERSION, SYSTEM_UPDATES } from './updates.js?v=25';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
 import { 
     getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged 
@@ -25,6 +24,8 @@ provider.addScope('https://www.googleapis.com/auth/drive.appdata');
 provider.setCustomParameters({ prompt: 'consent' });
 
 // Global state
+let CURRENT_HUB_VERSION = "1.0.0";
+let SYSTEM_UPDATES = [];
 let gDriveToken = sessionStorage.getItem("gDriveToken") || null;
 let dataFileId = null;
 let playerJsonData = {};
@@ -78,18 +79,53 @@ const elementsToUpdate = {
     "ui-def-hp": "defensiveMagicHp"
 };
 
+// --- GITHUB API FOLDER SCANNER ---
+async function loadSystemUpdates() {
+    try {
+        const res = await fetch('https://api.github.com/repos/adequateremedy/RPG-Hub/contents/assets/images/updates');
+        if (!res.ok) return;
+        const files = await res.json();
+        
+        const validUpdates = [];
+        const now = new Date();
+
+        files.forEach(file => {
+            // Looks for exactly: YYYY-MM-DD_vX.X.X.png (or jpg, etc)
+            const match = file.name.match(/^(\d{4}-\d{2}-\d{2})_(v[\d\.]+)\.(png|jpg|jpeg|gif)$/i);
+            if (match) {
+                const uDate = new Date(match[1] + 'T00:00:00');
+                const diffDays = (now - uDate) / (1000 * 60 * 60 * 24);
+                
+                // Only load if 14 days old or newer
+                if (diffDays <= 14) {
+                    validUpdates.push({
+                        id: file.name, // The exact filename acts as the un-repeatable Unique ID
+                        date: match[1],
+                        version: match[2],
+                        imageUrl: `assets/images/updates/${file.name}` 
+                    });
+                }
+            }
+        });
+
+        // Sort them so the newest date is at the top of the inbox
+        validUpdates.sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        SYSTEM_UPDATES = validUpdates;
+        
+        if (SYSTEM_UPDATES.length > 0) {
+            CURRENT_HUB_VERSION = SYSTEM_UPDATES[0].version; // Grab the version from the newest image
+        }
+    } catch (err) {
+        console.error("Failed to load updates from GitHub:", err);
+    }
+}
+
 // --- UPDATES AUTO-EXPIRE FILTER ---
 function getActiveUpdates() {
-    const now = new Date();
     return SYSTEM_UPDATES.filter(u => {
-        // Automatically drop if older than 14 days
-        const uDate = new Date(u.date + 'T00:00:00'); 
-        const diffDays = (now - uDate) / (1000 * 60 * 60 * 24);
-        if (diffDays > 14) return false;
-        
-        // Drop if player manually dismissed it
+        // Drop if player manually dismissed it based on the exact filename
         if (playerJsonData.dismissedUpdates && playerJsonData.dismissedUpdates.includes(u.id)) return false;
-
         return true;
     });
 }
@@ -1003,6 +1039,7 @@ async function buildHubUI(user) {
 
 async function handleUserReady(user) {
     showLoading("Syncing profile data...");
+    await loadSystemUpdates(); // Ask GitHub for the folder images first
     await getDriveAppData();
 
     const urlParams = new URLSearchParams(window.location.search);
