@@ -24,7 +24,7 @@ provider.addScope('https://www.googleapis.com/auth/drive.appdata');
 provider.setCustomParameters({ prompt: 'consent' });
 
 // Global state
-const CURRENT_HUB_VERSION = "1.0.3";
+const CURRENT_HUB_VERSION = "1.0.4";
 let gDriveToken = sessionStorage.getItem("gDriveToken") || null;
 let dataFileId = null;
 let playerJsonData = {};
@@ -80,6 +80,12 @@ const elementsToUpdate = {
 
 // --- SYSTEM UPDATES CONTENT ---
 const SYSTEM_UPDATES = [
+    {
+        id: "update_004_inbox_system",
+        title: "v1.0.4 - Inbox System & Instant Portraits",
+        date: "August 2026",
+        content: "We've upgraded the Updates tab to function like a true inbox! You will now see a notification badge when new patches drop. Messages stay in your inbox for reference until you use the new checkboxes and 'Delete Selected' button to clear them out.\n\nWe also completely bypassed the third-party image server! When you upload a portrait now, the Hub instantly compresses and saves it directly to our public database, making uploads lightning fast and much more stable."
+    },
     {
         id: "update_003_updates_tab",
         title: "v1.0.3 - New Updates Folder",
@@ -253,7 +259,7 @@ async function syncProfileToFirestore(user) {
         level: playerJsonData.level || 1,
         exp: playerJsonData.exp || 0,
         era: "Gen 1 - Steampunk",
-        portraitUrl: playerJsonData.portraitUrl || "", // This is now a Base64 string
+        portraitUrl: playerJsonData.portraitUrl || "", 
         bloodlineCourt: playerJsonData.bloodlineCourt || "---",
         birthCourt: playerJsonData.birthCourt || "---",
         essenceType: playerJsonData.essenceType || "---",
@@ -882,7 +888,7 @@ async function buildHubUI(user) {
             const clearImagesBtn = document.getElementById("clearImagesBtn");
 
             const soloPrompts = {
-                "market": "Walking closely with your guardian, humans brush past without looking down, their eyes sliding off you like water. You feel a warm hum of your unique energy, but why do they pretend you aren't there?",
+                "market": "Walking closely with your guardian, humans brush past without looking down, their eyes sliding off you like water. You feel a warm hum of your unique energy, but why do they pretend you arent there?",
                 "library": "Sitting in the grand reading room while your guardian watches over you. A human clerk walks by, totally ignoring your polite greeting. Your inner energy flickers in response to the cold shoulder.",
                 "train": "Waiting on the platform, holding your guardian's hand tightly. Human children play nearby, but you notice their parents quickly and quietly pull them away from you.",
                 "bakery": "The baker hands your guardian the pastries, refusing to acknowledge your existence or look at your face, leaving you to wonder what makes your energy so different.",
