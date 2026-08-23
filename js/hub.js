@@ -5,15 +5,11 @@ import {
 import { 
     getFirestore, doc, setDoc, collection, query, orderBy, limit, getDocs, serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
-import { 
-    getStorage, ref, uploadBytes, getDownloadURL 
-} from "https://www.gstatic.com/firebasejs/12.17.0/firebase-storage.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAeyOzh9YHaQDMSvn-8-ZyVqXkwY_diL5Y",
     authDomain: "solus-dynasty-rpg.firebaseapp.com",
     projectId: "solus-dynasty-rpg",
-    storageBucket: "solus-dynasty-rpg.firebasestorage.app",
     messagingSenderId: "136636530132",
     appId: "1:136636530132:web:6c77757f59f365be0c6a41",
     measurementId: "G-S6PXC09F52"
@@ -22,7 +18,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const storage = getStorage(app);
 
 const provider = new GoogleAuthProvider();
 provider.addScope('https://www.googleapis.com/auth/drive.appdata');
@@ -94,7 +89,7 @@ const SYSTEM_UPDATES = [
         id: "update_002_members",
         title: "Public Member Cards & Portraits",
         date: "August 2026",
-        content: "Our team agreed that it is much more beneficial and engaging for everyone to be able to see each other's characters! You can now click on any player's name in the Members tab to view a public version of their full Character Card, including their magical stats and portrait.\n\n**Action Required:** Because your original image is securely locked inside your private Google Drive, you will need to re-upload it to our public Firebase server. Please go to your Character Card and click 'Upload Image' again to make your portrait visible to the community."
+        content: "Our team agreed that it is much more beneficial and engaging for everyone to be able to see each other's characters! You can now click on any player's name in the Members tab to view a public version of their full Character Card, including their magical stats and portrait.\n\n**Action Required:** Because your original image is securely locked inside your private Google Drive, you will need to re-upload it. Please go to your Character Card and click 'Upload Image' again to compress and sync your portrait to our public server."
     },
     {
         id: "update_001_runic",
@@ -197,6 +192,7 @@ async function syncProfileToFirestore(user) {
     const sName = playerJsonData.starName || "";
     const fullName = sName ? `${charName} ${sName}` : charName;
     
+    // We now sync the entire Character Card profile so it can be viewed by others
     const memberData = {
         googleUid: user.uid,
         email: user.email,
@@ -207,7 +203,7 @@ async function syncProfileToFirestore(user) {
         level: playerJsonData.level || 1,
         exp: playerJsonData.exp || 0,
         era: "Gen 1 - Steampunk",
-        portraitUrl: playerJsonData.portraitUrl || "",
+        portraitUrl: playerJsonData.portraitUrl || "", // This is now a Base64 string
         bloodlineCourt: playerJsonData.bloodlineCourt || "---",
         birthCourt: playerJsonData.birthCourt || "---",
         essenceType: playerJsonData.essenceType || "---",
@@ -1071,27 +1067,59 @@ uploadBtn.addEventListener("click", () => fileInput.click());
 
 fileInput.addEventListener("change", async (e) => {
     if (e.target.files && e.target.files[0]) {
-        uploadBtn.textContent = "Uploading...";
+        uploadBtn.textContent = "Processing...";
         uploadBtn.disabled = true;
         try {
             const file = e.target.files[0];
-            
-            const storageRef = ref(storage, `portraits/${auth.currentUser.uid}_${file.name}`);
-            await uploadBytes(storageRef, file);
-            const publicUrl = await getDownloadURL(storageRef);
-            
-            playerJsonData.portraitUrl = publicUrl;
-            await saveDriveAppData();
-            
-            document.getElementById("ui-portrait-img").src = publicUrl;
-            await buildHubUI(auth.currentUser);
-            
+            const reader = new FileReader();
+
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = async function() {
+                    const canvas = document.createElement("canvas");
+                    const ctx = canvas.getContext("2d");
+
+                    const MAX_SIZE = 200;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_SIZE) {
+                            height *= MAX_SIZE / width;
+                            width = MAX_SIZE;
+                        }
+                    } else {
+                        if (height > MAX_SIZE) {
+                            width *= MAX_SIZE / height;
+                            height = MAX_SIZE;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    const base64String = canvas.toDataURL("image/jpeg", 0.7);
+
+                    playerJsonData.portraitUrl = base64String;
+                    await saveDriveAppData(); 
+                    
+                    document.getElementById("ui-portrait-img").src = base64String;
+                    await buildHubUI(auth.currentUser);
+
+                    uploadBtn.textContent = "Upload Image";
+                    uploadBtn.disabled = false;
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
         } catch (err) {
-            console.error("Image upload failed", err);
-            alert("Failed to upload image to Firebase Storage.");
+            console.error("Image processing failed", err);
+            alert("Failed to process and save image.");
+            uploadBtn.textContent = "Upload Image";
+            uploadBtn.disabled = false;
         }
-        uploadBtn.textContent = "Upload Image";
-        uploadBtn.disabled = false;
     }
 });
 
