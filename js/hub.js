@@ -26,7 +26,7 @@ provider.setCustomParameters({ prompt: 'consent' });
 // Global state
 let CURRENT_HUB_VERSION = "1.0.0";
 let SYSTEM_UPDATES = [];
-let gDriveToken = sessionStorage.getItem("gDriveToken") || null;
+let gDriveToken = localStorage.getItem("gDriveToken") || null;
 let dataFileId = null;
 let playerJsonData = {};
 let queuedJournalImages = [];
@@ -1245,7 +1245,7 @@ onAuthStateChanged(auth, async (user) => {
             await handleUserReady(user);
         } catch (error) {
             console.error("Auto-login failed:", error);
-            sessionStorage.removeItem("gDriveToken");
+            localStorage.removeItem("gDriveToken");
             gDriveToken = null;
             showError("Session expired or Drive connection failed. Please sign in again.");
         }
@@ -1260,7 +1260,7 @@ document.getElementById("googleSignInButton").addEventListener("click", async ()
         const result = await signInWithPopup(auth, provider);
         const credential = GoogleAuthProvider.credentialFromResult(result);
         gDriveToken = credential.accessToken;
-        sessionStorage.setItem("gDriveToken", gDriveToken);
+        localStorage.setItem("gDriveToken", gDriveToken);
         
         await handleUserReady(result.user);
     } catch (error) {
@@ -1271,7 +1271,7 @@ document.getElementById("googleSignInButton").addEventListener("click", async ()
 
 document.getElementById("signOutButton").addEventListener("click", async () => {
     await signOut(auth);
-    sessionStorage.removeItem("gDriveToken");
+    localStorage.removeItem("gDriveToken");
     gDriveToken = null;
     playerScreen.classList.add("hidden");
     loginScreen.classList.remove("hidden");
