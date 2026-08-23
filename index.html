@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Solus Dynasty RPG — Hub</title>
-    <link rel="stylesheet" href="css/hub.css?v=21">
+    <link rel="stylesheet" href="css/hub.css?v=22">
 </head>
 <body>
 
@@ -52,7 +52,9 @@
 
         <!-- TIER 2: GENERATION SELECTION -->
         <div class="tabs tier-2">
-            <button class="tab-btn" data-target="gen-updates">Updates</button>
+            <button class="tab-btn" data-target="gen-updates">
+                Updates <span id="updates-badge" class="hidden">0</span>
+            </button>
             <button class="tab-btn active" data-target="gen-1"><span id="gen-1-name">Gen 1 - Steampunk</span></button>
             <button class="tab-btn disabled" disabled>Gen 2 - UnCourted</button>
             <button class="tab-btn disabled" disabled>Gen 3 - Wynter</button>
@@ -64,6 +66,11 @@
         <!-- STAR LEVEL CONTENT: UPDATES -->
         <div id="gen-updates-content" class="hidden">
             <h2 style="text-align:center; margin-top:20px; color:#e3d2b9;">System Updates</h2>
+            
+            <div style="max-width: 600px; margin: 0 auto 15px auto; text-align: right;">
+                <button id="delete-updates-btn" style="padding: 8px 12px; font-size: 0.9rem; border-color: #7F522B; color: #ffb0b0; display: none;">🗑️ Delete Selected</button>
+            </div>
+
             <div id="updatesContainer" style="max-width: 600px; margin: 0 auto;">
                 <!-- Updates will dynamically render here -->
             </div>
@@ -290,6 +297,6 @@
     </div>
 </div>
 
-<script type="module" src="js/hub.js?v=21"></script>
+<script type="module" src="js/hub.js?v=22"></script>
 </body>
 </html>
