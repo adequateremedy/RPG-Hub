@@ -503,3 +503,15 @@ details[open].hub-dropdown summary::before {
     font-size: 2rem;
     cursor: pointer;
 }
+
+/* Clickable Member Rows */
+.member-name-link {
+    color: #e3d2b9;
+    text-decoration: underline;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.clickable-member-row:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
