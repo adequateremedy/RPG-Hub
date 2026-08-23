@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
 import { 
-    getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged 
+    getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged 
 } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-auth.js";
 import { 
     getFirestore, doc, setDoc, collection, query, orderBy, limit, getDocs, serverTimestamp 
@@ -1238,6 +1238,19 @@ async function handleUserReady(user) {
 
 // --- EVENT LISTENERS ---
 
+getRedirectResult(auth).then((result) => {
+    if (result) {
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        if (credential && credential.accessToken) {
+            gDriveToken = credential.accessToken;
+            localStorage.setItem("gDriveToken", gDriveToken);
+        }
+    }
+}).catch((error) => {
+    console.error(error);
+    showError("Sign-in or Drive connection failed.\n" + error.message);
+});
+
 onAuthStateChanged(auth, async (user) => {
     if (user && gDriveToken) {
         loginScreen.classList.add("hidden");
@@ -1249,24 +1262,15 @@ onAuthStateChanged(auth, async (user) => {
             gDriveToken = null;
             showError("Session expired or Drive connection failed. Please sign in again.");
         }
+    } else if (user && !gDriveToken) {
+        signInWithRedirect(auth, provider);
     }
 });
 
-document.getElementById("googleSignInButton").addEventListener("click", async () => {
+document.getElementById("googleSignInButton").addEventListener("click", () => {
     loginScreen.classList.add("hidden");
-    showLoading("Signing in...");
-
-    try {
-        const result = await signInWithPopup(auth, provider);
-        const credential = GoogleAuthProvider.credentialFromResult(result);
-        gDriveToken = credential.accessToken;
-        localStorage.setItem("gDriveToken", gDriveToken);
-        
-        await handleUserReady(result.user);
-    } catch (error) {
-        console.error(error);
-        showError("Sign-in or Drive connection failed.\n" + error.message);
-    }
+    showLoading("Redirecting to Google...");
+    signInWithRedirect(auth, provider);
 });
 
 document.getElementById("signOutButton").addEventListener("click", async () => {
