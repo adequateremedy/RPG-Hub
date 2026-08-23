@@ -200,6 +200,32 @@ async function getDriveAppData() {
         if (playerJsonData.journalEntries === undefined) {
             playerJsonData.journalEntries = [];
         }
+        if (playerJsonData.inventory === undefined) {
+            playerJsonData.inventory = [];
+        }
+
+        // AUTO-SANITIZER: Fixes the stacked EXP and inventory duplicate glitches
+        if (playerJsonData.exp > 200) {
+            let correctExp = 0;
+            if (playerJsonData.birthBookCompleted) correctExp += 50;
+            if (playerJsonData.schoolProgress && playerJsonData.schoolProgress.class1) {
+                correctExp += 100;
+                playerJsonData.class1ExpAwarded = true;
+            }
+            if (playerJsonData.journalEntries) correctExp += (playerJsonData.journalEntries.length * 10);
+            
+            playerJsonData.exp = correctExp;
+            
+            // Clean up any duplicate Runic Stones
+            const runicStones = playerJsonData.inventory.filter(i => i.category === "Runic Stone");
+            if (runicStones.length > 1) {
+                const lastStone = runicStones[runicStones.length - 1];
+                playerJsonData.inventory = playerJsonData.inventory.filter(i => i.category !== "Runic Stone");
+                if (lastStone) playerJsonData.inventory.push(lastStone);
+            }
+            await saveDriveAppData();
+        }
+
     } else {
         playerJsonData = {
             starName: "",
