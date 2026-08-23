@@ -83,7 +83,7 @@ const SYSTEM_UPDATES = [
         id: "update_003_updates_tab",
         title: "New Updates Folder",
         date: "August 2026",
-        content: "We have introduced this new Updates folder attached directly to your Star! As the Solus Dynasty Universe continues to grow, this space will serve as your central notification hub for all patch notes, mechanic changes, and system resets across all Eras and Generations. Once you have read an update and completed any required actions, you can safely dismiss the message to keep this tab clean."
+        content: "We have introduced this new Updates folder attached directly to your Star! As the Solus Dynasty Universe continues to grow, this space will serve as your central notification hub for all patch notes, mechanic changes, and system resets across all Eras and Generations. You can safely leave messages here for reference, or check the box and delete them to keep your feed clean."
     },
     {
         id: "update_002_members",
@@ -108,6 +108,21 @@ document.querySelectorAll('.tier-2 .tab-btn:not(.disabled)').forEach(btn => {
         if (btn.dataset.target === "gen-updates") {
             document.getElementById("gen-updates-content").classList.remove("hidden");
             document.getElementById("gen-1-content").classList.add("hidden");
+            
+            // Mark unseen updates as seen
+            let changed = false;
+            SYSTEM_UPDATES.forEach(u => {
+                if (!playerJsonData.dismissedUpdates.includes(u.id) && !playerJsonData.seenUpdates.includes(u.id)) {
+                    playerJsonData.seenUpdates.push(u.id);
+                    changed = true;
+                }
+            });
+            
+            if (changed) {
+                updateBadge();
+                saveDriveAppData(); // Fire and forget save
+            }
+            
             renderUpdates();
         } else if (btn.dataset.target === "gen-1") {
             document.getElementById("gen-updates-content").classList.add("hidden");
@@ -150,39 +165,72 @@ function hideLoading() {
     loadingStatusText.textContent = "";
 }
 
-// --- UPDATES RENDER LOGIC ---
+// --- UPDATES & BADGE LOGIC ---
+function updateBadge() {
+    const unseen = SYSTEM_UPDATES.filter(u => 
+        !playerJsonData.dismissedUpdates.includes(u.id) && 
+        !playerJsonData.seenUpdates.includes(u.id)
+    );
+    const badge = document.getElementById("updates-badge");
+    if (unseen.length > 0) {
+        badge.textContent = unseen.length;
+        badge.classList.remove("hidden");
+    } else {
+        badge.classList.add("hidden");
+    }
+}
+
 function renderUpdates() {
     const container = document.getElementById("updatesContainer");
+    const deleteBtn = document.getElementById("delete-updates-btn");
     container.innerHTML = "";
 
     const activeUpdates = SYSTEM_UPDATES.filter(u => !playerJsonData.dismissedUpdates.includes(u.id));
 
     if (activeUpdates.length === 0) {
+        deleteBtn.style.display = "none";
         container.innerHTML = `<p style="text-align:center; opacity:0.7; margin-top:40px;">You are all caught up! There are no new updates.</p>`;
         return;
     }
+
+    deleteBtn.style.display = "inline-block";
 
     activeUpdates.forEach(update => {
         const div = document.createElement("div");
         div.className = "update-card";
         div.innerHTML = `
-            <div class="update-date">${update.date}</div>
-            <h3 class="update-title">${update.title}</h3>
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 10px;">
+                <div style="display:flex; align-items:center; gap: 10px;">
+                    <input type="checkbox" class="update-checkbox" value="${update.id}">
+                    <h3 class="update-title" style="margin:0; border:none; padding:0;">${update.title}</h3>
+                </div>
+                <div class="update-date" style="position:static;">${update.date}</div>
+            </div>
             <div class="update-text">${update.content}</div>
-            <button class="dismiss-update-btn" data-id="${update.id}">Dismiss Update</button>
         `;
         container.appendChild(div);
     });
-
-    document.querySelectorAll('.dismiss-update-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const updateId = e.target.dataset.id;
-            playerJsonData.dismissedUpdates.push(updateId);
-            renderUpdates(); // re-render immediately to hide it visually
-            await saveDriveAppData(); // save preference to drive
-        });
-    });
 }
+
+document.getElementById("delete-updates-btn").addEventListener("click", async () => {
+    const checkboxes = document.querySelectorAll('.update-checkbox:checked');
+    if (checkboxes.length === 0) {
+        alert("Please select at least one update to delete.");
+        return;
+    }
+    
+    const confirmDelete = confirm("Are you sure you want to delete the selected updates? This cannot be undone.");
+    if (confirmDelete) {
+        showLoading("Deleting updates...");
+        checkboxes.forEach(cb => {
+            playerJsonData.dismissedUpdates.push(cb.value);
+        });
+        await saveDriveAppData();
+        renderUpdates();
+        updateBadge();
+        hideLoading();
+    }
+});
 
 // --- FIRESTORE PUBLIC PROFILE SYNC ---
 
@@ -192,7 +240,6 @@ async function syncProfileToFirestore(user) {
     const sName = playerJsonData.starName || "";
     const fullName = sName ? `${charName} ${sName}` : charName;
     
-    // We now sync the entire Character Card profile so it can be viewed by others
     const memberData = {
         googleUid: user.uid,
         email: user.email,
@@ -325,6 +372,9 @@ async function getDriveAppData() {
         if (playerJsonData.dismissedUpdates === undefined) {
             playerJsonData.dismissedUpdates = [];
         }
+        if (playerJsonData.seenUpdates === undefined) {
+            playerJsonData.seenUpdates = [];
+        }
 
         // --- VERSION CONTROL & FORCED WIPE ---
         if (!playerJsonData.versions) playerJsonData.versions = {};
@@ -386,6 +436,7 @@ async function getDriveAppData() {
             journalEntries: [],
             inventory: [],
             dismissedUpdates: [],
+            seenUpdates: [],
             versions: { runicFally: 2 },
             comingOfAgeUnlocked: false,
             comingOfAgeCompleted: false,
@@ -608,6 +659,7 @@ async function buildHubUI(user) {
     document.getElementById("headerPlayerEmail").textContent = user.email;
 
     calculateLevel();
+    updateBadge(); // Trigger badge logic on load
 
     if (playerJsonData.starName) {
         starNameDisplay.textContent = playerJsonData.starName;
