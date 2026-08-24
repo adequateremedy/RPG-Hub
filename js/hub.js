@@ -359,7 +359,7 @@ function showMemberCard(data, displayName) {
     document.getElementById("member-off-name").textContent = data.offensiveMagicName || "---";
     document.getElementById("member-off-dmg").textContent = data.offensiveMagicDmg || "---";
     document.getElementById("member-def-name").textContent = data.defensiveMagicName || "---";
-    document.getElementById("member-def-hp").textContent = data.defensiveMagicHp || "---";
+    document.getElementById("member-def-hp").document.textContent = data.defensiveMagicHp || "---";
 
     const portraitImg = document.getElementById("member-portrait-img");
     if (data.portraitUrl) {
