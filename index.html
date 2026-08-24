@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Solus Dynasty RPG — Hub</title>
-    <link rel="stylesheet" href="css/hub.css?v=37">
+    <link rel="stylesheet" href="css/hub.css?v=40">
 </head>
 <body>
 
@@ -282,17 +282,17 @@
 
 <!-- JOURNAL MODAL -->
 <div id="journalModal" class="modal-overlay hidden">
-    <div class="modal-box" style="position: relative; width: 90vw; max-width: 1000px; height: auto; max-height: 90vh; overflow-y: auto; overflow-x: hidden; text-align: left;">
-        <button id="closeJournalBtn" class="lightbox-close" style="top: -20px; right: -20px; z-index: 10;">&times;</button>
-        <div id="journalModalContent"></div>
+    <div class="modal-box" style="padding: 0; background: transparent; border: none; box-shadow: none; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center;">
+        <button id="closeJournalBtn" class="lightbox-close" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">&times;</button>
+        <div id="journalModalContent" style="background: #111; padding: 25px; border: 2px solid #7F522B; border-radius: 8px; width: 90vw; max-width: 800px; text-align: left; box-sizing: border-box;"></div>
     </div>
 </div>
 
 <!-- RP SESSION MODAL -->
 <div id="rpModal" class="modal-overlay hidden">
-    <div class="modal-box" style="position: relative; width: 90vw; max-width: 1000px; height: auto; max-height: 90vh; overflow-y: auto; overflow-x: hidden; text-align: left;">
-        <button id="closeRpBtn" class="lightbox-close" style="top: -20px; right: -20px; z-index: 10;">&times;</button>
-        <div id="rpModalContent"></div>
+    <div class="modal-box" style="padding: 0; background: transparent; border: none; box-shadow: none; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center;">
+        <button id="closeRpBtn" class="lightbox-close" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">&times;</button>
+        <div id="rpModalContent" style="background: #111; padding: 25px; border: 2px solid #7F522B; border-radius: 8px; width: 90vw; max-width: 800px; text-align: left; box-sizing: border-box;"></div>
     </div>
 </div>
 
@@ -315,6 +315,6 @@
     </div>
 </div>
 
-<script type="module" src="js/hub.js?v=37"></script>
+<script type="module" src="js/hub.js?v=40"></script>
 </body>
 </html>
