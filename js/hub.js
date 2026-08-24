@@ -555,29 +555,29 @@ function getCurrentAgeGroup() {
 
 const journalPromptsByAge = {
     "2-3": {
-        "1": "The Brass Market - in Crudsder, Eidolon (Ireland) (IMVU Prebuild Room available): You are walking through the market with your parent(s)/guardian(s). Towering humans constantly brush past, completely ignoring your existence. Describe the chaotic sights and sounds from your perspective.",
-        "2": "Eidolon, Ireland Steam-Train Platform The baker actively refuses to acknowledge you and/or your parent(s)/guardian(s). Describe how this cold treatment and unspoken rejection feels.",
-        "3": "The Clockwork Toy Shop - in Cogsbin, Eidolon (Ireland): You are with your parent(s)/guardian(s) and become utterly fascinated by the mechanical toys. However, the owner quickly shoos all of you out, stating they don't serve Fae-kind. Describe the allure of the toys and the sudden sting of being cast out."
+        "1": { title: "The Brass Market", location: "Crudsder, Eidolon (Ireland) (IMVU Prebuild Room available)", text: "You are walking through the market with your parent(s)/guardian(s). Towering humans constantly brush past, completely ignoring your existence. Describe the chaotic sights and sounds from your perspective." },
+        "2": { title: "Steam-Train Platform", location: "Eidolon, Ireland", text: "The baker actively refuses to acknowledge you and/or your parent(s)/guardian(s). Describe how this cold treatment and unspoken rejection feels." },
+        "3": { title: "The Clockwork Toy Shop", location: "Cogsbin, Eidolon (Ireland)", text: "You are with your parent(s)/guardian(s) and become utterly fascinated by the mechanical toys. However, the owner quickly shoos all of you out, stating they don't serve Fae-kind. Describe the allure of the toys and the sudden sting of being cast out." }
     },
     "4-5": {
-        "1": "Needlepoint Apothecary, in SteelMills, Eidolon (Ireland): Standing beside your parent(s)/guardian(s), you watch the strange potions bubble in their glass vats. Describe the strange, vibrating sensation you feel as your own innate Energy hums in response to certain liquids, even though you don't understand why.",
-        "2": "The Backhand Tailor Shop - in Crudsder, Eidolon (Ireland): You are being measured for a thick, restrictive cap designed specifically to hide your pointed, fae ears. Describe the physical discomfort of the hat and what your parent(s)/guardian(s) tell you about why you must wear it to hide.",
-        "3": "The Airship Docks of SteelMills - in SteelMills, Eidolon (Ireland): Standing with your parent(s)/guardian(s) in the heavy, choking smog, you wait to board. You are all guided to a segregated section, kept distant from the human passengers. Describe the grimy environment and the feeling of being kept apart."
+        "1": { title: "Needlepoint Apothecary", location: "SteelMills, Eidolon (Ireland)", text: "Standing beside your parent(s)/guardian(s), you watch the strange potions bubble in their glass vats. Describe the strange, vibrating sensation you feel as your own innate Energy hums in response to certain liquids, even though you don't understand why." },
+        "2": { title: "The Backhand Tailor Shop", location: "Crudsder, Eidolon (Ireland)", text: "You are being measured for a thick, restrictive cap designed specifically to hide your pointed, fae ears. Describe the physical discomfort of the hat and what your parent(s)/guardian(s) tell you about why you must wear it to hide." },
+        "3": { title: "The Airship Docks of SteelMills", location: "SteelMills, Eidolon (Ireland)", text: "Standing with your parent(s)/guardian(s) in the heavy, choking smog, you wait to board. You are all guided to a segregated section, kept distant from the human passengers. Describe the grimy environment and the feeling of being kept apart." }
     },
     "6-7": {
-        "1": "A random spice merchant's stall - Eidolon (Ireland): While out with your parent(s)/guardian(s), you realize you can identify the different ingredients strictly through your sense of smell. The merchant, a Fae woman, notices and is very kind to you. Describe this sensory.",
-        "2": "Home Kitchen: Safe inside, your parent(s)/guardian(s) help you prepare a meal for everyone in your home. Describe the warmth of the hearth, the smells of the food, and the comforting feeling of safety away from humans.",
-        "3": "The Brass Market - in Crudsder, Eidolon (Ireland) (IMVU Prebuilt Room available): You tag along close to your parent(s)/guardian(s) as they look for some meat at the Butcher's Shop. Describe the heavy smells, the bustling humans and fae, and what it's like navigating The Brass Market."
+        "1": { title: "A random spice merchant's stall", location: "Eidolon (Ireland)", text: "While out with your parent(s)/guardian(s), you realize you can identify the different ingredients strictly through your sense of smell. The merchant, a Fae woman, notices and is very kind to you. Describe this sensory." },
+        "2": { title: "Home Kitchen", location: "Home", text: "Safe inside, your parent(s)/guardian(s) help you prepare a meal for everyone in your home. Describe the warmth of the hearth, the smells of the food, and the comforting feeling of safety away from humans." },
+        "3": { title: "The Brass Market", location: "Crudsder, Eidolon (Ireland) (IMVU Prebuilt Room available)", text: "You tag along close to your parent(s)/guardian(s) as they look for some meat at the Butcher's Shop. Describe the heavy smells, the bustling humans and fae, and what it's like navigating The Brass Market." }
     },
     "8-9": {
-        "1": "Fyxd Botany - in Cogsbin, Eidolon (Ireland): You are with your parent(s)/guardian(s) and notice that certain plants react subtly to the hum of your Energy as you pass. The owner, an old Seelie Fae man who never smiles, treats you all with quiet friendliness. Describe the plants' reactions and the shop's atmosphere.",
-        "2": "Tinker's Shop - in SteelMills, Eidolon (Ireland): Accompanied by your parent(s)/guardian(s), you observe the intricate, ticking timepieces. Instead of fascination, the mechanical gears feel fundamentally 'wrong' and abrasive to you. Describe this jarring, uncomfortable feeling.",
-        "3": "The Brass Market - in Crudsder, Eidolon (Ireland) (IMVU Prebuild Room available): For the very first time, your parent(s)/guardian(s) allow you to wander around the area by yourself—as long as you promise to stay in The Brass Market. Describe the rush of this new independence and the sights you take in while walking alone."
+        "1": { title: "Fyxd Botany", location: "Cogsbin, Eidolon (Ireland)", text: "You are with your parent(s)/guardian(s) and notice that certain plants react subtly to the hum of your Energy as you pass. The owner, an old Seelie Fae man who never smiles, treats you all with quiet friendliness. Describe the plants' reactions and the shop's atmosphere." },
+        "2": { title: "Tinker's Shop", location: "SteelMills, Eidolon (Ireland)", text: "Accompanied by your parent(s)/guardian(s), you observe the intricate, ticking timepieces. Instead of fascination, the mechanical gears feel fundamentally 'wrong' and abrasive to you. Describe this jarring, uncomfortable feeling." },
+        "3": { title: "The Brass Market", location: "Crudsder, Eidolon (Ireland) (IMVU Prebuild Room available)", text: "For the very first time, your parent(s)/guardian(s) allow you to wander around the area by yourself—as long as you promise to stay in The Brass Market. Describe the rush of this new independence and the sights you take in while walking alone." }
     },
     "10-11": {
-        "1": "The Airship Docks of SteelMills - in SteelMills, Eidolon (Ireland): Traveling with your parent(s)/guardian(s) through the heavy smog, you are once again segregated onboard, away from the human passengers. Now that you are older, describe how your perspective on this forced separation has changed (if it has).",
-        "2": "At Home: You are out of sight when you overhear your parent(s)/guardian(s) talking to another Fae adult about Humans putting your kind in Cages. You know if they see you, they will immediately stop talking. Describe the fear of overhearing this dark reality and how you react.",
-        "3": "The Brass Market - in Crudsder, Eidolon (Ireland) (IMVU Prebuild Room available): You are old enough now that your parent(s)/guardian(s) have sent you to the market alone with coin to buy food for the Home. Describe the responsibility of this task and how you navigate the crowded, human-dominated market by yourself."
+        "1": { title: "The Airship Docks of SteelMills", location: "SteelMills, Eidolon (Ireland)", text: "Traveling with your parent(s)/guardian(s) through the heavy smog, you are once again segregated onboard, away from the human passengers. Now that you are older, describe how your perspective on this forced separation has changed (if it has)." },
+        "2": { title: "At Home", location: "Home", text: "You are out of sight when you overhear your parent(s)/guardian(s) talking to another Fae adult about Humans putting your kind in Cages. You know if they see you, they will immediately stop talking. Describe the fear of overhearing this dark reality and how you react." },
+        "3": { title: "The Brass Market", location: "Crudsder, Eidolon (Ireland) (IMVU Prebuild Room available)", text: "You are old enough now that your parent(s)/guardian(s) have sent you to the market alone with coin to buy food for the Home. Describe the responsibility of this task and how you navigate the crowded, human-dominated market by yourself." }
     }
 };
 
@@ -597,7 +597,8 @@ function attachJournalModalListeners() {
     journalSceneSelect.addEventListener("change", (e) => {
         const val = e.target.value;
         if (val && journalPromptsByAge[currentAgeGroup][val]) {
-            promptContainer.innerHTML = `<strong>Scene Prompt:</strong><br>${journalPromptsByAge[currentAgeGroup][val]}`;
+            const scene = journalPromptsByAge[currentAgeGroup][val];
+            promptContainer.innerHTML = `<strong>Location:</strong> ${scene.location}<br><br><strong>Scene Prompt:</strong><br>${scene.text}`;
             promptContainer.classList.remove("hidden");
             actionContainer.classList.remove("hidden");
         } else {
@@ -787,9 +788,9 @@ function renderJournalModalContent() {
             <label style="font-weight:bold; color:#7F522B;">Choose a Lore Scene:</label>
             <select id="journalSceneSelect" style="width:100%; padding:10px; margin-top:8px; background:#222; color:#fff; border:1px solid #444; font-family:inherit; border-radius:4px;">
                 <option value="">-- Select Scene --</option>
-                <option value="1">Scene Option 1</option>
-                <option value="2">Scene Option 2</option>
-                <option value="3">Scene Option 3</option>
+                <option value="1">${journalPromptsByAge[currentAgeGroup]["1"].title}</option>
+                <option value="2">${journalPromptsByAge[currentAgeGroup]["2"].title}</option>
+                <option value="3">${journalPromptsByAge[currentAgeGroup]["3"].title}</option>
             </select>
         </div>
 
