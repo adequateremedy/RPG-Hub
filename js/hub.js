@@ -555,29 +555,29 @@ function getCurrentAgeGroup() {
 
 const journalPromptsByAge = {
     "2-3": {
-        "1": "The Brass Market - in Crudsder, Eidolon (Ireland): Ignored by humans brushing past (actual RP Room available).",
-        "2": "Any (Cogsbin, SteelMills, or Crudsder - Eidolon (Ireland)) Steam-Train Platform: Human parents pulling their children away from you. The Brushed Herbs Bakery - in Crudsder, Eidolon (Ireland): Baker refuses to acknowledge you, or your caretaker/parent(s).",
-        "3": "The Clockwork Toy Shop - in Cogsbin, Eidolon (Ireland): Fascinated by toys, but shooed out by the owner. They don't serve Fae-kind."
+        "1": "The Brass Market - in Crudsder, Eidolon (Ireland) (IMVU Prebuild Room available): You are walking through the market with your parent(s)/guardian(s). Towering humans constantly brush past, completely ignoring your existence. Describe the chaotic sights and sounds from your perspective.",
+        "2": "Eidolon, Ireland Steam-Train Platform The baker actively refuses to acknowledge you and/or your parent(s)/guardian(s). Describe how this cold treatment and unspoken rejection feels.",
+        "3": "The Clockwork Toy Shop - in Cogsbin, Eidolon (Ireland): You are with your parent(s)/guardian(s) and become utterly fascinated by the mechanical toys. However, the owner quickly shoos all of you out, stating they don't serve Fae-kind. Describe the allure of the toys and the sudden sting of being cast out."
     },
     "4-5": {
-        "1": "Needlepoint Apothecary, in SteelMills, Eidolon (Ireland): Watching potions bubble and feeling their Energy.",
-        "2": "The Backhand Tailor Shop - in Crudsder, Eidolon (Ireland): Being measured for restrictive hat/cap meant to hide your pointed, fae ears.",
-        "3": "The Airship Docks of SteelMills - in SteelMills, Eidolon (Ireland): Watching the heavy smog and a feeling of being distant from the humans, as you are segregated onboard."
+        "1": "Needlepoint Apothecary, in SteelMills, Eidolon (Ireland): Standing beside your parent(s)/guardian(s), you watch the strange potions bubble in their glass vats. Describe the strange, vibrating sensation you feel as your own innate Energy hums in response to certain liquids, even though you don't understand why.",
+        "2": "The Backhand Tailor Shop - in Crudsder, Eidolon (Ireland): You are being measured for a thick, restrictive cap designed specifically to hide your pointed, fae ears. Describe the physical discomfort of the hat and what your parent(s)/guardian(s) tell you about why you must wear it to hide.",
+        "3": "The Airship Docks of SteelMills - in SteelMills, Eidolon (Ireland): Standing with your parent(s)/guardian(s) in the heavy, choking smog, you wait to board. You are all guided to a segregated section, kept distant from the human passengers. Describe the grimy environment and the feeling of being kept apart."
     },
     "6-7": {
-        "1": "A random spice merchant's stall - Eidolon (Ireland): Recognizing ingredients strictly through your sense of smell. Merchant is a Fae woman and is very nice to you.",
-        "2": "Home Kitchen: Your parent/guardian helps you make a meal for everyone in your home.",
-        "3": "The Brass Market - in Crudsder, Eidolon (Ireland): You tag along with your parent(s)/guardian, looking for some meat at the Butcher's Shop (actual RP Room available)."
+        "1": "A random spice merchant's stall - Eidolon (Ireland): While out with your parent(s)/guardian(s), you realize you can identify the different ingredients strictly through your sense of smell. The merchant, a Fae woman, notices and is very kind to you. Describe this sensory.",
+        "2": "Home Kitchen: Safe inside, your parent(s)/guardian(s) help you prepare a meal for everyone in your home. Describe the warmth of the hearth, the smells of the food, and the comforting feeling of safety away from humans.",
+        "3": "The Brass Market - in Crudsder, Eidolon (Ireland) (IMVU Prebuilt Room available): You tag along close to your parent(s)/guardian(s) as they look for some meat at the Butcher's Shop. Describe the heavy smells, the bustling humans and fae, and what it's like navigating The Brass Market."
     },
     "8-9": {
-        "1": "Fyxd Botany - in Cogsbin, Eidolon (Ireland): You are with your parent/guardian and notice that certain plants react subtly to your Energy. Owner is an old Seelie Fae man who never smiles, but is friendly.",
-        "2": "Tinker's Shop - in SteelMills, Eidolon (Ireland): Observing timepieces (with parent/guardian) that feel fundamentally 'wrong' to your Energy.",
-        "3": "The Brass Market - in Crudsder, Eidolon (Ireland): You are left to wander around the area, by yourself - as long as you promise to stay in The Brass Market (actual RP Room available)."
+        "1": "Fyxd Botany - in Cogsbin, Eidolon (Ireland): You are with your parent(s)/guardian(s) and notice that certain plants react subtly to the hum of your Energy as you pass. The owner, an old Seelie Fae man who never smiles, treats you all with quiet friendliness. Describe the plants' reactions and the shop's atmosphere.",
+        "2": "Tinker's Shop - in SteelMills, Eidolon (Ireland): Accompanied by your parent(s)/guardian(s), you observe the intricate, ticking timepieces. Instead of fascination, the mechanical gears feel fundamentally 'wrong' and abrasive to you. Describe this jarring, uncomfortable feeling.",
+        "3": "The Brass Market - in Crudsder, Eidolon (Ireland) (IMVU Prebuild Room available): For the very first time, your parent(s)/guardian(s) allow you to wander around the area by yourself—as long as you promise to stay in The Brass Market. Describe the rush of this new independence and the sights you take in while walking alone."
     },
     "10-11": {
-        "1": "The Airship Docks of SteelMills - in SteelMills, Eidolon (Ireland): Watching the heavy smog and a feeling of being distant from the humans, as you & your parent(s)/guardian(s) are segregated onboard.",
-        "2": "At Home - Overhear guardian(s)/parent(s) talking to another Fae adult about Humans putting Fae in Cages. They cannot see you, and you know if they do, they will stop talking about it.",
-        "3": "The Brass Market - in Crudsder, Eidolon (Ireland): Parent(s)/Guardian(s) send you to buy some food for the Home (actual RP Room available)."
+        "1": "The Airship Docks of SteelMills - in SteelMills, Eidolon (Ireland): Traveling with your parent(s)/guardian(s) through the heavy smog, you are once again segregated onboard, away from the human passengers. Now that you are older, describe how your perspective on this forced separation has changed (if it has).",
+        "2": "At Home: You are out of sight when you overhear your parent(s)/guardian(s) talking to another Fae adult about Humans putting your kind in Cages. You know if they see you, they will immediately stop talking. Describe the fear of overhearing this dark reality and how you react.",
+        "3": "The Brass Market - in Crudsder, Eidolon (Ireland) (IMVU Prebuild Room available): You are old enough now that your parent(s)/guardian(s) have sent you to the market alone with coin to buy food for the Home. Describe the responsibility of this task and how you navigate the crowded, human-dominated market by yourself."
     }
 };
 
