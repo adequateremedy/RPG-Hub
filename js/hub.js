@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
 import { 
-    getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged 
+    getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence 
 } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-auth.js";
 import { 
     getFirestore, doc, setDoc, collection, query, orderBy, limit, getDocs, serverTimestamp 
@@ -18,6 +18,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+// Force localStorage instead of IndexedDB to prevent the Android "closing/hidden" crash
+setPersistence(auth, browserLocalPersistence).catch((error) => {
+    console.error("Persistence error:", error);
+});
 
 const provider = new GoogleAuthProvider();
 provider.addScope('https://www.googleapis.com/auth/drive.appdata');
@@ -1238,28 +1243,6 @@ async function handleUserReady(user) {
 
 // --- EVENT LISTENERS ---
 
-getRedirectResult(auth).then((result) => {
-    if (result) {
-        const credential = GoogleAuthProvider.credentialFromResult(result);
-        if (credential && credential.accessToken) {
-            gDriveToken = credential.accessToken;
-            localStorage.setItem("gDriveToken", gDriveToken);
-            if (result.user && loginScreen.classList.contains("hidden") === false) {
-                 loginScreen.classList.add("hidden");
-                 handleUserReady(result.user).catch(error => {
-                     console.error("Auto-login failed:", error);
-                     localStorage.removeItem("gDriveToken");
-                     gDriveToken = null;
-                     showError("Session expired or Drive connection failed. Please sign in again.");
-                 });
-            }
-        }
-    }
-}).catch((error) => {
-    console.error(error);
-    showError("Sign-in or Drive connection failed.\n" + error.message);
-});
-
 onAuthStateChanged(auth, async (user) => {
     if (user && gDriveToken) {
         loginScreen.classList.add("hidden");
@@ -1274,10 +1257,23 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-document.getElementById("googleSignInButton").addEventListener("click", () => {
+document.getElementById("googleSignInButton").addEventListener("click", async () => {
     loginScreen.classList.add("hidden");
-    showLoading("Redirecting to Google...");
-    signInWithRedirect(auth, provider);
+    showLoading("Signing in...");
+
+    try {
+        await setPersistence(auth, browserLocalPersistence);
+        const result = await signInWithPopup(auth, provider);
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        if (credential && credential.accessToken) {
+            gDriveToken = credential.accessToken;
+            localStorage.setItem("gDriveToken", gDriveToken);
+        }
+        await handleUserReady(result.user);
+    } catch (error) {
+        console.error(error);
+        showError("Sign-in or Drive connection failed.\n" + error.message);
+    }
 });
 
 document.getElementById("signOutButton").addEventListener("click", async () => {
