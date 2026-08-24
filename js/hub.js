@@ -28,6 +28,8 @@ const provider = new GoogleAuthProvider();
 provider.addScope('https://www.googleapis.com/auth/drive.appdata');
 provider.setCustomParameters({ prompt: 'consent' });
 
+const DEFAULT_PORTRAIT = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='170' height='170' viewBox='0 0 170 170'%3E%3Crect width='170' height='170' fill='%231a1a1a'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23e3d2b9' font-family='sans-serif' font-size='14'%3ENo Image%3C/text%3E%3C/svg%3E";
+
 // Global state
 let CURRENT_HUB_VERSION = "1.0.0";
 let SYSTEM_UPDATES = [];
@@ -365,7 +367,7 @@ function showMemberCard(data, displayName) {
     if (data.portraitUrl) {
         portraitImg.src = data.portraitUrl;
     } else {
-        portraitImg.src = "https://via.placeholder.com/170x170/1a1a1a/e3d2b9?text=No+Image";
+        portraitImg.src = DEFAULT_PORTRAIT;
     }
 
     memberCardModal.classList.remove("hidden");
@@ -1077,7 +1079,10 @@ async function buildHubUI(user) {
             document.getElementById("ui-portrait-img").src = imgUrl;
         } catch (err) {
             console.warn("Failed to load portrait image.", err);
+            document.getElementById("ui-portrait-img").src = DEFAULT_PORTRAIT;
         }
+    } else {
+        document.getElementById("ui-portrait-img").src = DEFAULT_PORTRAIT;
     }
 
     if (playerJsonData.birthBookCompleted) {
@@ -1325,10 +1330,17 @@ uploadBtn.addEventListener("click", () => fileInput.click());
 
 fileInput.addEventListener("change", async (e) => {
     if (e.target.files && e.target.files[0]) {
+        const file = e.target.files[0];
+        
+        if (file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif') || (file.type && !file.type.startsWith('image/'))) {
+            alert("HEIC or unsupported format detected. Please select a standard JPG, PNG, or WebP image.");
+            fileInput.value = "";
+            return;
+        }
+
         uploadBtn.textContent = "Processing...";
         uploadBtn.disabled = true;
         try {
-            const file = e.target.files[0];
             const reader = new FileReader();
 
             reader.onload = function(event) {
@@ -1369,7 +1381,17 @@ fileInput.addEventListener("change", async (e) => {
                     uploadBtn.textContent = "Upload Image";
                     uploadBtn.disabled = false;
                 };
+                img.onerror = function() {
+                    alert("Could not process this image format. Please convert to JPG or PNG.");
+                    uploadBtn.textContent = "Upload Image";
+                    uploadBtn.disabled = false;
+                };
                 img.src = event.target.result;
+            };
+            reader.onerror = function() {
+                alert("Failed to read file.");
+                uploadBtn.textContent = "Upload Image";
+                uploadBtn.disabled = false;
             };
             reader.readAsDataURL(file);
         } catch (err) {
