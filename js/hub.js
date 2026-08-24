@@ -766,10 +766,10 @@ function renderJournalModalContent() {
     const ageJournalsCount = playerJsonData.journalEntries.filter(e => (e.ageGroup || "2-3") === currentAgeGroup).length;
     const container = document.getElementById("journalModalContent");
 
-    if (ageJournalsCount >= 5) {
+    if (ageJournalsCount >= 3) {
         container.innerHTML = `
             <h2 style="margin-top:0; color:#e3d2b9; border-bottom:1px solid #444; padding-bottom:10px; text-align:center;">Solo Journal</h2>
-            <p style="text-align:center; color:#7F522B; font-weight:bold;">Max Journal Entries Completed (5/5) for Age ${currentAgeGroup}</p>
+            <p style="text-align:center; color:#7F522B; font-weight:bold;">Max Journal Entries Completed (3/3) for Age ${currentAgeGroup}</p>
             <p style="text-align:center; opacity:0.8; font-size:0.9rem;">You have earned the maximum EXP available from solo journaling for your current age group.</p>
             <button id="closeJournalBottomBtn" style="width:100%; margin-top:20px;">Close</button>
         `;
@@ -779,7 +779,7 @@ function renderJournalModalContent() {
 
     container.innerHTML = `
         <h2 style="margin-top:0; color:#e3d2b9; border-bottom:1px solid #444; padding-bottom:10px; text-align:center;">Solo Journal</h2>
-        <p style="text-align:center; font-weight:bold; color:#7F522B; margin-top:0;">Age ${currentAgeGroup} Journals Completed: ${ageJournalsCount} / 5</p>
+        <p style="text-align:center; font-weight:bold; color:#7F522B; margin-top:0;">Age ${currentAgeGroup} Journals Completed: ${ageJournalsCount} / 3</p>
         <p style="text-align:center; font-size: 0.9rem; opacity: 0.9; margin-bottom: 20px;">
             Journals are <strong>1st-person</strong> solo writing entries describing your personal experience based on your current age bracket.
         </p>
@@ -803,7 +803,7 @@ function renderJournalModalContent() {
                 • Attach 3 to 10 images from your device.
             </div>
             
-            <textarea id="journalTextarea" rows="8" style="width:100%; padding:10px; background:#1a1a1a; color:#eee; border:1px solid #444; font-family:inherit; border-radius:4px;" placeholder="Write your first-person journal entry here..."></textarea>
+            <textarea id="journalTextarea" rows="5" style="width:100%; padding:10px; background:#1a1a1a; color:#eee; border:1px solid #444; font-family:inherit; border-radius:4px;" placeholder="Write your first-person journal entry here..."></textarea>
             
             <div style="margin-top:15px;">
                 <label style="font-weight:bold; font-size:0.9rem; color:#7F522B;">Attach Images:</label>
@@ -870,7 +870,7 @@ function renderRpModalContent() {
                 • Images MUST show: (A) Your character's name in a sentence, (B) Your RP partner's name in a sentence, and (C) The word "Stars" in generalized conversation.
             </div>
             
-            <textarea id="rpTextarea" rows="8" style="width:100%; padding:10px; background:#1a1a1a; color:#eee; border:1px solid #444; font-family:inherit; border-radius:4px;" placeholder="Write your 3rd-person RP session story here..."></textarea>
+            <textarea id="rpTextarea" rows="5" style="width:100%; padding:10px; background:#1a1a1a; color:#eee; border:1px solid #444; font-family:inherit; border-radius:4px;" placeholder="Write your 3rd-person RP session story here..."></textarea>
             
             <div style="margin-top:15px;">
                 <label style="font-weight:bold; font-size:0.9rem; color:#7F522B;">Attach Images:</label>
