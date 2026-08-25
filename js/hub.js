@@ -389,82 +389,96 @@ async function getDriveAppData() {
         const fileRes = await fetch(`https://www.googleapis.com/drive/v3/files/${dataFileId}?alt=media`, {
             headers: { 'Authorization': `Bearer ${gDriveToken}` }
         });
-        playerJsonData = await fileRes.json();
-        
-        if (playerJsonData.birthBookExpAwarded === undefined) {
-            playerJsonData.birthBookExpAwarded = playerJsonData.birthBookCompleted;
-        }
-        if (playerJsonData.schoolProgress === undefined) {
-            playerJsonData.schoolProgress = { class1: false, class2: false, class3: false, class4: false, class5: false };
-        }
-        if (playerJsonData.journalEntries === undefined) {
-            playerJsonData.journalEntries = [];
-        }
-        if (playerJsonData.rpSessions === undefined) {
-            playerJsonData.rpSessions = [];
-        }
-        if (playerJsonData.inventory === undefined) {
-            playerJsonData.inventory = [];
-        }
-        if (playerJsonData.dismissedUpdates === undefined) {
-            playerJsonData.dismissedUpdates = [];
-        }
-        if (playerJsonData.seenUpdates === undefined) {
-            playerJsonData.seenUpdates = [];
-        }
+        let rawData = await fileRes.json();
 
-        if (!playerJsonData.versions) playerJsonData.versions = {};
-        const CURRENT_RUNIC_VERSION = 2;
-
-        if (playerJsonData.versions.runicFally !== CURRENT_RUNIC_VERSION) {
-            if (playerJsonData.schoolProgress && playerJsonData.schoolProgress.class1) {
-                playerJsonData.schoolProgress.class1 = false;
-                if (playerJsonData.class1ExpAwarded) {
-                    playerJsonData.exp = Math.max(0, (playerJsonData.exp || 0) - 100);
-                    playerJsonData.class1ExpAwarded = false;
+        // MIGRATION SCRIPT: Convert Flat Data to Nested Star Architecture
+        if (!rawData.stars) {
+            console.log("Old data format detected. Migrating to Generational System...");
+            
+            playerJsonData = {
+                account: {
+                    unlockedStars: 1,
+                    dismissedUpdates: rawData.dismissedUpdates || [],
+                    seenUpdates: rawData.seenUpdates || []
+                },
+                stars: {
+                    "1": {
+                        starName: rawData.starName || "",
+                        isComplete: false,
+                        gens: {
+                            "1": {
+                                era: "Steampunk",
+                                realm: "Midgard",
+                                characterName: rawData.characterName || "",
+                                portraitUrl: rawData.portraitUrl || "",
+                                portraitId: rawData.portraitId || "",
+                                level: rawData.level || 1,
+                                exp: rawData.exp || 0,
+                                bloodlineCourt: rawData.bloodlineCourt || "",
+                                birthCourt: rawData.birthCourt || "",
+                                essenceType: rawData.essenceType || "",
+                                trigger: rawData.trigger || "",
+                                offensiveMagicName: rawData.offensiveMagicName || "",
+                                offensiveMagicDmg: rawData.offensiveMagicDmg || "",
+                                defensiveMagicName: rawData.defensiveMagicName || "",
+                                defensiveMagicHp: rawData.defensiveMagicHp || "",
+                                birthBookCompleted: rawData.birthBookCompleted || false,
+                                birthBookExpAwarded: rawData.birthBookExpAwarded || false,
+                                schoolProgress: rawData.schoolProgress || { class1: false, class2: false, class3: false, class4: false, class5: false },
+                                journalEntries: rawData.journalEntries || [],
+                                rpSessions: rawData.rpSessions || [],
+                                inventory: rawData.inventory || [],
+                                class1Points: rawData.class1Points || 0,
+                                class1Round: rawData.class1Round || 1,
+                                class1Exp: rawData.class1Exp || 0,
+                                class1RegularStars: rawData.class1RegularStars || 0,
+                                class1BigStars: rawData.class1BigStars || 0,
+                                class1GiantStars: rawData.class1GiantStars || 0,
+                                class1TotalRunes: rawData.class1TotalRunes || {},
+                                versions: rawData.versions || { runicFally: 2 }
+                            },
+                            "2": { unlocked: false },
+                            "3": { unlocked: false },
+                            "4": { unlocked: false },
+                            "5": { unlocked: false },
+                            "zenith": { unlocked: false }
+                        }
+                    },
+                    "2": { unlocked: false },
+                    "3": { unlocked: false },
+                    "4": { unlocked: false },
+                    "5": { unlocked: false }
                 }
-            }
+            };
             
-            if (playerJsonData.inventory) {
-                playerJsonData.inventory = playerJsonData.inventory.filter(item => item.category !== "Runic Stone");
-            }
-            
-            playerJsonData.class1Points = 0;
-            playerJsonData.class1Round = 1;
-            playerJsonData.class1Exp = 0;
-            playerJsonData.class1RegularStars = 0;
-            playerJsonData.class1BigStars = 0;
-            playerJsonData.class1GiantStars = 0;
-            if (playerJsonData.class1TotalRunes) {
-                Object.keys(playerJsonData.class1TotalRunes).forEach(k => playerJsonData.class1TotalRunes[k] = 0);
-            }
-            
-            playerJsonData.versions.runicFally = CURRENT_RUNIC_VERSION;
+            // Force an immediate save to lock in the new architecture
             await saveDriveAppData();
+            console.log("Migration complete and saved to Google Drive.");
+        } else {
+            // Already migrated
+            playerJsonData = rawData;
         }
 
     } else {
+        // Brand new player generation logic
         playerJsonData = {
-            starName: "",
-            birthBookCompleted: false,
-            birthBookExpAwarded: false, 
-            schoolProgress: { class1: false, class2: false, class3: false, class4: false, class5: false },
-            journalEntries: [],
-            rpSessions: [],
-            inventory: [],
-            dismissedUpdates: [],
-            seenUpdates: [],
-            versions: { runicFally: 2 },
-            comingOfAgeUnlocked: false,
-            comingOfAgeCompleted: false,
-            traumaUnlocked: false,
-            traumaCompleted: false,
-            escapeUnlocked: false,
-            escapeCompleted: false,
-            exp: 0,
-            level: 1,
-            portraitId: "",
-            portraitUrl: ""
+            account: { unlockedStars: 1, dismissedUpdates: [], seenUpdates: [] },
+            stars: {
+                "1": {
+                    starName: "",
+                    isComplete: false,
+                    gens: {
+                        "1": {
+                            era: "Steampunk", realm: "Midgard", characterName: "", portraitUrl: "", portraitId: "",
+                            level: 1, exp: 0, birthBookCompleted: false, birthBookExpAwarded: false,
+                            schoolProgress: { class1: false, class2: false, class3: false, class4: false, class5: false },
+                            journalEntries: [], rpSessions: [], inventory: [], versions: { runicFally: 2 }
+                        },
+                        "2": { unlocked: false }, "3": { unlocked: false }, "4": { unlocked: false }, "5": { unlocked: false }, "zenith": { unlocked: false }
+                    }
+                },
+                "2": { unlocked: false }, "3": { unlocked: false }, "4": { unlocked: false }, "5": { unlocked: false }
+            }
         };
         await saveDriveAppData();
     }
@@ -548,7 +562,7 @@ function calculateLevel() {
 }
 
 function getCurrentAgeGroup() {
-    if (!playerJsonData.schoolProgress.class1) return "2-3";
+    if (!playerJsonData.schoolProgress || !playerJsonData.schoolProgress.class1) return "2-3";
     if (!playerJsonData.schoolProgress.class2) return "4-5";
     if (!playerJsonData.schoolProgress.class3) return "6-7";
     if (!playerJsonData.schoolProgress.class4) return "8-9";
@@ -651,6 +665,7 @@ function attachJournalModalListeners() {
                 images: imageFileIds
             };
 
+            if(!playerJsonData.journalEntries) playerJsonData.journalEntries = [];
             playerJsonData.journalEntries.push(newEntry);
             playerJsonData.exp = (playerJsonData.exp || 0) + 10;
             queuedJournalImages = []; 
@@ -745,6 +760,7 @@ function attachRpModalListeners() {
                 images: imageFileIds
             };
 
+            if(!playerJsonData.rpSessions) playerJsonData.rpSessions = [];
             playerJsonData.rpSessions.push(newEntry);
             playerJsonData.exp = (playerJsonData.exp || 0) + 10;
             queuedRpImages = []; 
@@ -765,7 +781,7 @@ function attachRpModalListeners() {
 
 function renderJournalModalContent() {
     const currentAgeGroup = getCurrentAgeGroup();
-    const ageJournalsCount = playerJsonData.journalEntries.filter(e => (e.ageGroup || "2-3") === currentAgeGroup).length;
+    const ageJournalsCount = (playerJsonData.journalEntries || []).filter(e => (e.ageGroup || "2-3") === currentAgeGroup).length;
     const container = document.getElementById("journalModalContent");
 
     if (ageJournalsCount >= 3) {
@@ -825,7 +841,7 @@ function renderJournalModalContent() {
 
 function renderRpModalContent() {
     const currentAgeGroup = getCurrentAgeGroup();
-    const ageRpCount = playerJsonData.rpSessions.filter(e => (e.ageGroup || "2-3") === currentAgeGroup).length;
+    const ageRpCount = (playerJsonData.rpSessions || []).filter(e => (e.ageGroup || "2-3") === currentAgeGroup).length;
     const container = document.getElementById("rpModalContent");
 
     if (ageRpCount >= 5) {
@@ -1184,13 +1200,13 @@ async function buildHubUI(user) {
         const openSchoolBtn = document.getElementById("openSchoolBtn");
         if(openSchoolBtn) {
             openSchoolBtn.addEventListener("click", () => {
-                const c1 = playerJsonData.schoolProgress.class1;
+                const c1 = playerJsonData.schoolProgress && playerJsonData.schoolProgress.class1;
                 document.getElementById("chk-class1").textContent = c1 ? "[X]" : "[ ]";
                 document.getElementById("name-class1").innerHTML = `<a href="https://adequateremedy.github.io/Runic-Fally/" style="color: #e3d2b9; text-decoration: underline;">Runic-Fally</a>`;
-                document.getElementById("chk-class2").textContent = playerJsonData.schoolProgress.class2 ? "[X]" : "[ ]";
-                document.getElementById("chk-class3").textContent = playerJsonData.schoolProgress.class3 ? "[X]" : "[ ]";
-                document.getElementById("chk-class4").textContent = playerJsonData.schoolProgress.class4 ? "[X]" : "[ ]";
-                document.getElementById("chk-class5").textContent = playerJsonData.schoolProgress.class5 ? "[X]" : "[ ]";
+                document.getElementById("chk-class2").textContent = playerJsonData.schoolProgress && playerJsonData.schoolProgress.class2 ? "[X]" : "[ ]";
+                document.getElementById("chk-class3").textContent = playerJsonData.schoolProgress && playerJsonData.schoolProgress.class3 ? "[X]" : "[ ]";
+                document.getElementById("chk-class4").textContent = playerJsonData.schoolProgress && playerJsonData.schoolProgress.class4 ? "[X]" : "[ ]";
+                document.getElementById("chk-class5").textContent = playerJsonData.schoolProgress && playerJsonData.schoolProgress.class5 ? "[X]" : "[ ]";
                 schoolModal.classList.remove("hidden");
             });
         }
@@ -1223,7 +1239,7 @@ async function handleUserReady(user) {
     const urlBloodlineCourt = urlParams.get('bloodlineCourt');
     let dataChanged = false;
 
-    if (urlBirthCourt && urlBloodlineCourt) {
+    if (urlBirthCourt && urlBloodlineCourt && !playerJsonData.stars) {
         playerJsonData.birthCourt = urlBirthCourt;
         playerJsonData.bloodlineCourt = urlBloodlineCourt;
         playerJsonData.birthBookCompleted = true;
@@ -1231,7 +1247,7 @@ async function handleUserReady(user) {
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 
-    if (playerJsonData.birthBookCompleted && (playerJsonData.exp || 0) < 50) {
+    if (!playerJsonData.stars && playerJsonData.birthBookCompleted && (playerJsonData.exp || 0) < 50) {
         playerJsonData.exp = 50;
         playerJsonData.birthBookExpAwarded = true; 
         dataChanged = true;
