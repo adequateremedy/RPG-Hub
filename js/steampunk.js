@@ -359,7 +359,7 @@ export function renderRpModalContent() {
 export function renderAvailableActions(actionsContainer, activeChar) {
     let availableActionsHTML = "";
 
-    if (activeChar.exp >= 500) {
+    if (activeChar.exp >= 450) {
         availableActionsHTML += `
             <details class="hub-dropdown">
                 <summary>Trial Books</summary>
