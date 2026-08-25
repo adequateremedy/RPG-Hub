@@ -43,17 +43,12 @@ let queuedRpImages = [];
 let activeStar = "1";
 let activeGen = "1";
 
-// DOM Elements
+// DOM Elements (Global / Tier 1 & 2 / Modals)
 const loginScreen = document.getElementById("loginScreen");
 const loadingScreen = document.getElementById("loadingScreen");
 const loadingStatusText = document.getElementById("loadingStatusText");
 const playerScreen = document.getElementById("playerScreen");
 const errorMsg = document.getElementById("errorMessage");
-
-const uiName = document.getElementById("ui-name");
-const editNameContainer = document.getElementById("edit-name-container");
-const editNameInput = document.getElementById("edit-name-input");
-const saveNameBtn = document.getElementById("save-name-btn");
 
 const starNameDisplay = document.getElementById("star-name-display");
 const gen1NameDisplay = document.getElementById("gen-1-name");
@@ -61,7 +56,6 @@ const editStarBtn = document.getElementById("edit-star-name-btn");
 const editStarContainer = document.getElementById("edit-star-container");
 const editStarInput = document.getElementById("edit-star-input");
 const saveStarBtn = document.getElementById("save-star-btn");
-const uploadBtn = document.getElementById("ui-portrait-upload-btn");
 
 const schoolModal = document.getElementById("schoolModal");
 const closeSchoolBtn = document.getElementById("closeSchoolBtn");
@@ -89,6 +83,163 @@ const elementsToUpdate = {
     "ui-def-name": "defensiveMagicName",
     "ui-def-hp": "defensiveMagicHp"
 };
+
+// --- DYNAMIC TEMPLATE LOADER ---
+async function loadEraTemplate(eraId) {
+    const container = document.getElementById('era-content-container');
+    
+    // Prevent reloading if the requested template is already active
+    if (container.dataset.activeEra === eraId) return;
+
+    showLoading(`Loading ${eraId} interface...`);
+    
+    try {
+        const response = await fetch(`templates/${eraId}.html`);
+        if (!response.ok) throw new Error(`Failed to load ${eraId} template.`);
+        
+        const html = await response.text();
+        container.innerHTML = html;
+        container.dataset.activeEra = eraId;
+        
+        // Re-bind all dynamic elements inside the newly loaded template
+        bindEraEvents();
+        
+    } catch (error) {
+        console.error(error);
+        container.innerHTML = `<p style="text-align:center; color:#ffb0b0; margin-top: 40px;">Error loading interface.</p>`;
+    }
+    
+    hideLoading();
+}
+
+// Re-binds event listeners for DOM elements that were just injected
+function bindEraEvents() {
+    // Tier 3 Tabs logic 
+    document.querySelectorAll('.tier-3 .tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tier-3 .tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.hub-section').forEach(s => s.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(btn.dataset.target).classList.add('active');
+
+            if (btn.dataset.target === "tab-members") {
+                loadMembersLeaderboard();
+            }
+        });
+    });
+
+    // Name Editor Logic
+    const saveNameBtn = document.getElementById("save-name-btn");
+    const editNameInput = document.getElementById("edit-name-input");
+    const uiName = document.getElementById("ui-name");
+    const editNameContainer = document.getElementById("edit-name-container");
+
+    if (saveNameBtn && editNameInput) {
+        saveNameBtn.addEventListener("click", async () => {
+            const val = editNameInput.value.trim();
+            if (val) {
+                showLoading("Saving...");
+                playerJsonData.stars[activeStar].gens[activeGen].characterName = val;
+                if (uiName) {
+                    uiName.textContent = val;
+                    uiName.classList.remove("hidden");
+                }
+                if (editNameContainer) editNameContainer.classList.add("hidden");
+                
+                gen1NameDisplay.textContent = `${val} - Steampunk`; // Assuming Steampunk for Gen 1 currently
+                
+                await saveDriveAppData();
+                await buildHubUI(auth.currentUser);
+                hideLoading();
+            }
+        });
+    }
+
+    // Portrait Upload Logic
+    const uploadBtn = document.getElementById("ui-portrait-upload-btn");
+    const fileInput = document.getElementById("portrait-file-input");
+
+    if (uploadBtn && fileInput) {
+        uploadBtn.addEventListener("click", () => fileInput.click());
+
+        fileInput.addEventListener("change", async (e) => {
+            if (e.target.files && e.target.files[0]) {
+                const file = e.target.files[0];
+                
+                if (file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif') || (file.type && !file.type.startsWith('image/'))) {
+                    alert("HEIC or unsupported format detected. Please select a standard JPG, PNG, or WebP image.");
+                    fileInput.value = "";
+                    return;
+                }
+
+                uploadBtn.textContent = "Processing...";
+                uploadBtn.disabled = true;
+                try {
+                    const reader = new FileReader();
+
+                    reader.onload = function(event) {
+                        const img = new Image();
+                        img.onload = async function() {
+                            const canvas = document.createElement("canvas");
+                            const ctx = canvas.getContext("2d");
+
+                            const MAX_SIZE = 200;
+                            let width = img.width;
+                            let height = img.height;
+
+                            if (width > height) {
+                                if (width > MAX_SIZE) {
+                                    height *= MAX_SIZE / width;
+                                    width = MAX_SIZE;
+                                }
+                            } else {
+                                if (height > MAX_SIZE) {
+                                    width *= MAX_SIZE / height;
+                                    height = MAX_SIZE;
+                                }
+                            }
+
+                            canvas.width = width;
+                            canvas.height = height;
+
+                            ctx.drawImage(img, 0, 0, width, height);
+
+                            const base64String = canvas.toDataURL("image/jpeg", 0.7);
+
+                            playerJsonData.stars[activeStar].gens[activeGen].portraitUrl = base64String;
+                            await saveDriveAppData(); 
+                            
+                            const portraitImg = document.getElementById("ui-portrait-img");
+                            if (portraitImg) portraitImg.src = base64String;
+                            
+                            await buildHubUI(auth.currentUser);
+
+                            uploadBtn.textContent = "Upload Image";
+                            uploadBtn.disabled = false;
+                        };
+                        img.onerror = function() {
+                            alert("Could not process this image format. Please convert to JPG or PNG.");
+                            uploadBtn.textContent = "Upload Image";
+                            uploadBtn.disabled = false;
+                        };
+                        img.src = event.target.result;
+                    };
+                    reader.onerror = function() {
+                        alert("Failed to read file.");
+                        uploadBtn.textContent = "Upload Image";
+                        uploadBtn.disabled = false;
+                    };
+                    reader.readAsDataURL(file);
+                } catch (err) {
+                    console.error("Image processing failed", err);
+                    alert("Failed to process and save image.");
+                    uploadBtn.textContent = "Upload Image";
+                    uploadBtn.disabled = false;
+                }
+            }
+        });
+    }
+}
 
 // --- GITHUB API FOLDER SCANNER ---
 async function loadSystemUpdates() {
@@ -144,13 +295,13 @@ function getActiveUpdates() {
 
 // Tier 2 Tabs logic 
 document.querySelectorAll('.tier-2 .tab-btn:not(.disabled)').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
         document.querySelectorAll('.tier-2 .tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
 
         if (btn.dataset.target === "gen-updates") {
             document.getElementById("gen-updates-content").classList.remove("hidden");
-            document.getElementById("gen-1-content").classList.add("hidden");
+            document.getElementById("era-content-container").classList.add("hidden");
             
             let changed = false;
             if (!playerJsonData.account.seenUpdates) playerJsonData.account.seenUpdates = [];
@@ -170,22 +321,10 @@ document.querySelectorAll('.tier-2 .tab-btn:not(.disabled)').forEach(btn => {
         } else if (btn.dataset.target === "gen-1") {
             activeGen = "1";
             document.getElementById("gen-updates-content").classList.add("hidden");
-            document.getElementById("gen-1-content").classList.remove("hidden");
+            document.getElementById("era-content-container").classList.remove("hidden");
+            
+            await loadEraTemplate('steampunk');
             buildHubUI(auth.currentUser);
-        }
-    });
-});
-
-// Tier 3 Tabs logic 
-document.querySelectorAll('.tier-3 .tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.tier-3 .tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.hub-section').forEach(s => s.classList.remove('active'));
-        btn.classList.add('active');
-        document.getElementById(btn.dataset.target).classList.add('active');
-
-        if (btn.dataset.target === "tab-members") {
-            loadMembersLeaderboard();
         }
     });
 });
@@ -318,6 +457,8 @@ async function syncProfileToFirestore(user) {
 
 async function loadMembersLeaderboard() {
     const membersTableBody = document.getElementById("membersTableBody");
+    if (!membersTableBody) return;
+    
     membersTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; opacity:0.6;">Loading members...</td></tr>`;
     try {
         const q = query(collection(db, "players"), orderBy("exp", "desc"), limit(50));
@@ -923,6 +1064,8 @@ function renderRpModalContent() {
 async function renderInventory() {
     const activeChar = playerJsonData.stars[activeStar].gens[activeGen];
     const inventoryGrid = document.getElementById("inventoryGrid");
+    if (!inventoryGrid) return;
+    
     const items = activeChar.inventory || [];
     
     if (items.length === 0) {
@@ -979,6 +1122,8 @@ async function renderJournalAndGallery() {
     const activeChar = playerJsonData.stars[activeStar].gens[activeGen];
     const journalContainer = document.getElementById("journalEntriesContainer");
     const galleryListContainer = document.getElementById("galleryListContainer");
+    
+    if (!journalContainer || !galleryListContainer) return;
     
     const jEntries = activeChar.journalEntries || [];
     const rpEntries = activeChar.rpSessions || [];
@@ -1085,7 +1230,9 @@ async function buildHubUI(user) {
         editStarBtn.classList.remove("hidden");
     }
 
-    gen1NameDisplay.textContent = activeChar.characterName ? `${activeChar.characterName} - Steampunk` : "Gen 1 - Steampunk";
+    if (gen1NameDisplay) {
+        gen1NameDisplay.textContent = activeChar.characterName ? `${activeChar.characterName} - Steampunk` : "Gen 1 - Steampunk";
+    }
 
     for (const [elementId, dataKey] of Object.entries(elementsToUpdate)) {
         const el = document.getElementById(elementId);
@@ -1106,144 +1253,150 @@ async function buildHubUI(user) {
         }
     }
 
-    if (activeChar.portraitUrl) {
-        document.getElementById("ui-portrait-img").src = activeChar.portraitUrl;
-    } else if (activeChar.portraitId) {
-        try {
-            const imgUrl = await getImageUrl(activeChar.portraitId);
-            document.getElementById("ui-portrait-img").src = imgUrl;
-        } catch (err) {
-            console.warn("Failed to load portrait image.", err);
-            document.getElementById("ui-portrait-img").src = DEFAULT_PORTRAIT;
+    const portraitImg = document.getElementById("ui-portrait-img");
+    if (portraitImg) {
+        if (activeChar.portraitUrl) {
+            portraitImg.src = activeChar.portraitUrl;
+        } else if (activeChar.portraitId) {
+            try {
+                const imgUrl = await getImageUrl(activeChar.portraitId);
+                portraitImg.src = imgUrl;
+            } catch (err) {
+                console.warn("Failed to load portrait image.", err);
+                portraitImg.src = DEFAULT_PORTRAIT;
+            }
+        } else {
+            portraitImg.src = DEFAULT_PORTRAIT;
         }
-    } else {
-        document.getElementById("ui-portrait-img").src = DEFAULT_PORTRAIT;
     }
 
+    const uploadBtn = document.getElementById("ui-portrait-upload-btn");
+    const uiName = document.getElementById("ui-name");
+    const editNameContainer = document.getElementById("edit-name-container");
+
     if (activeChar.birthBookCompleted) {
-        uploadBtn.classList.remove("hidden"); 
+        if (uploadBtn) uploadBtn.classList.remove("hidden"); 
 
         if (!activeChar.characterName) {
-            uiName.textContent = "Unborn";
-            uiName.classList.add("hidden");
-            editNameContainer.classList.remove("hidden");
+            if (uiName) { uiName.textContent = "Unborn"; uiName.classList.add("hidden"); }
+            if (editNameContainer) editNameContainer.classList.remove("hidden");
         } else {
-            uiName.textContent = activeChar.characterName;
-            uiName.classList.remove("hidden");
-            editNameContainer.classList.add("hidden");
+            if (uiName) { uiName.textContent = activeChar.characterName; uiName.classList.remove("hidden"); }
+            if (editNameContainer) editNameContainer.classList.add("hidden");
         }
     } else {
-        uploadBtn.classList.add("hidden"); 
-        uiName.textContent = "Unborn";
-        uiName.classList.remove("hidden");
-        editNameContainer.classList.add("hidden");
+        if (uploadBtn) uploadBtn.classList.add("hidden"); 
+        if (uiName) { uiName.textContent = "Unborn"; uiName.classList.remove("hidden"); }
+        if (editNameContainer) editNameContainer.classList.add("hidden");
     }
     
     renderInventory();
     renderJournalAndGallery();
 
     const actionsContainer = document.getElementById("actionsContainer");
-    actionsContainer.innerHTML = "";
-    
-    const isBirthBookComplete = activeChar.birthBookCompleted;
-    const hasCharacterName = !!activeChar.characterName;
-    const hasStarName = !!starName;
-    const hasPortrait = !!activeChar.portraitUrl || !!activeChar.portraitId;
-    const isFullySetup = isBirthBookComplete && hasCharacterName && hasStarName && hasPortrait;
-    
-    if (!isBirthBookComplete) {
-        let instructions = `
-            <div style="text-align: center; max-width: 600px; margin: 10px auto;">
-                <p style="opacity:0.9; margin-bottom: 25px; line-height: 1.6;">
-                    Welcome to the Solus Dynasty Universe. 
-                    <br><br>
-                    <strong>1. Name your Star:</strong> Use the pencil icon next to "Star 1" above. The name of your Star serves as the permanent last name for all 5 characters in this lineage and cannot be changed once set.
-                    <br><br>
-                    <strong>2. Complete the Birth Book:</strong> Begin the pre-birth sensory choice system to establish your character's baseline stats.
-                </p>
-                <button onclick="window.location.href='https://adequateremedy.github.io/BirthBook/'" style="border-color: #7F522B; color: #e3d2b9; padding: 12px 25px; font-weight: bold; font-size: 1.1rem;">Begin Birth Book</button>
-            </div>
-        `;
-        actionsContainer.innerHTML = instructions;
-    } else if (!isFullySetup) {
-        let charCheck = hasCharacterName ? "✅" : "❌";
-        let starCheck = hasStarName ? "✅" : "❌";
-        let portCheck = hasPortrait ? "✅" : "❌";
+    if (actionsContainer) {
+        actionsContainer.innerHTML = "";
+        
+        const isBirthBookComplete = activeChar.birthBookCompleted;
+        const hasCharacterName = !!activeChar.characterName;
+        const hasStarName = !!starName;
+        const hasPortrait = !!activeChar.portraitUrl || !!activeChar.portraitId;
+        const isFullySetup = isBirthBookComplete && hasCharacterName && hasStarName && hasPortrait;
+        
+        if (!isBirthBookComplete) {
+            let instructions = `
+                <div style="text-align: center; max-width: 600px; margin: 10px auto;">
+                    <p style="opacity:0.9; margin-bottom: 25px; line-height: 1.6;">
+                        Welcome to the Solus Dynasty Universe. 
+                        <br><br>
+                        <strong>1. Name your Star:</strong> Use the pencil icon next to "Star 1" above. The name of your Star serves as the permanent last name for all 5 characters in this lineage and cannot be changed once set.
+                        <br><br>
+                        <strong>2. Complete the Birth Book:</strong> Begin the pre-birth sensory choice system to establish your character's baseline stats.
+                    </p>
+                    <button onclick="window.location.href='https://adequateremedy.github.io/BirthBook/'" style="border-color: #7F522B; color: #e3d2b9; padding: 12px 25px; font-weight: bold; font-size: 1.1rem;">Begin Birth Book</button>
+                </div>
+            `;
+            actionsContainer.innerHTML = instructions;
+        } else if (!isFullySetup) {
+            let charCheck = hasCharacterName ? "✅" : "❌";
+            let starCheck = hasStarName ? "✅" : "❌";
+            let portCheck = hasPortrait ? "✅" : "❌";
 
-        actionsContainer.innerHTML = `
-            <div style="text-align: center; max-width: 500px; margin: 20px auto;">
-                <p style="opacity:0.9; line-height: 1.6; color: #e3d2b9;">
-                    Your baseline stats have been established, but you are not yet fully Born into the world.<br><br>
-                    To unlock School and Journal experiences, please ensure you have completed the following:
-                </p>
-                <ul style="list-style: none; padding: 0; text-align: left; max-width: 350px; margin: 20px auto; line-height: 2; opacity:0.9;">
-                    <li>${starCheck} Name your Star (Top bar)</li>
-                    <li>${charCheck} Name your Character (Character Card tab)</li>
-                    <li>${portCheck} Upload a Character Portrait (Character Card tab)</li>
-                </ul>
-            </div>
-        `;
-    } else {
-        let availableActionsHTML = "";
+            actionsContainer.innerHTML = `
+                <div style="text-align: center; max-width: 500px; margin: 20px auto;">
+                    <p style="opacity:0.9; line-height: 1.6; color: #e3d2b9;">
+                        Your baseline stats have been established, but you are not yet fully Born into the world.<br><br>
+                        To unlock School and Journal experiences, please ensure you have completed the following:
+                    </p>
+                    <ul style="list-style: none; padding: 0; text-align: left; max-width: 350px; margin: 20px auto; line-height: 2; opacity:0.9;">
+                        <li>${starCheck} Name your Star (Top bar)</li>
+                        <li>${charCheck} Name your Character (Character Card tab)</li>
+                        <li>${portCheck} Upload a Character Portrait (Character Card tab)</li>
+                    </ul>
+                </div>
+            `;
+        } else {
+            let availableActionsHTML = "";
 
-        if (activeChar.exp >= 500) {
+            if (activeChar.exp >= 500) {
+                availableActionsHTML += `
+                    <details class="hub-dropdown">
+                        <summary>Trial Books</summary>
+                        <div class="dropdown-content">
+                            <button onclick="window.location.href='https://adequateremedy.github.io/Awakening_Essence/'" style="border-color: #7F522B; color: #e3d2b9; padding: 12px 20px; font-weight: bold; width: 100%; max-width: 400px; display: block; margin: 0 auto;">Play Awakening Essence</button>
+                        </div>
+                    </details>
+                `;
+            }
+
             availableActionsHTML += `
                 <details class="hub-dropdown">
-                    <summary>Trial Books</summary>
-                    <div class="dropdown-content">
-                        <button onclick="window.location.href='https://adequateremedy.github.io/Awakening_Essence/'" style="border-color: #7F522B; color: #e3d2b9; padding: 12px 20px; font-weight: bold; width: 100%; max-width: 400px; display: block; margin: 0 auto;">Play Awakening Essence</button>
+                    <summary>Echoes</summary>
+                    <div class="dropdown-content" style="text-align:center;">
+                        <button id="openSchoolBtn" style="border-color: #7F522B; color: #e3d2b9; padding: 12px 20px; font-weight: bold; width: 100%; max-width: 400px;">School</button>
+                    </div>
+                </details>
+                
+                <details class="hub-dropdown">
+                    <summary>Experiences</summary>
+                    <div class="dropdown-content" style="text-align:center; display: flex; flex-direction: column; gap: 15px; align-items: center;">
+                        <button id="openJournalBtn" style="border-color: #7F522B; color: #e3d2b9; padding: 12px 20px; font-weight: bold; width: 100%; max-width: 400px;">Journal</button>
+                        <button id="openRpBtn" style="border-color: #7F522B; color: #e3d2b9; padding: 12px 20px; font-weight: bold; width: 100%; max-width: 400px;">RP Session</button>
                     </div>
                 </details>
             `;
-        }
 
-        availableActionsHTML += `
-            <details class="hub-dropdown">
-                <summary>Echoes</summary>
-                <div class="dropdown-content" style="text-align:center;">
-                    <button id="openSchoolBtn" style="border-color: #7F522B; color: #e3d2b9; padding: 12px 20px; font-weight: bold; width: 100%; max-width: 400px;">School</button>
-                </div>
-            </details>
+            actionsContainer.innerHTML = availableActionsHTML;
             
-            <details class="hub-dropdown">
-                <summary>Experiences</summary>
-                <div class="dropdown-content" style="text-align:center; display: flex; flex-direction: column; gap: 15px; align-items: center;">
-                    <button id="openJournalBtn" style="border-color: #7F522B; color: #e3d2b9; padding: 12px 20px; font-weight: bold; width: 100%; max-width: 400px;">Journal</button>
-                    <button id="openRpBtn" style="border-color: #7F522B; color: #e3d2b9; padding: 12px 20px; font-weight: bold; width: 100%; max-width: 400px;">RP Session</button>
-                </div>
-            </details>
-        `;
+            const openSchoolBtn = document.getElementById("openSchoolBtn");
+            if(openSchoolBtn) {
+                openSchoolBtn.addEventListener("click", () => {
+                    const c1 = activeChar.schoolProgress && activeChar.schoolProgress.class1;
+                    document.getElementById("chk-class1").textContent = c1 ? "[X]" : "[ ]";
+                    document.getElementById("name-class1").innerHTML = `<a href="https://adequateremedy.github.io/Runic-Fally/" style="color: #e3d2b9; text-decoration: underline;">Runic-Fally</a>`;
+                    document.getElementById("chk-class2").textContent = activeChar.schoolProgress && activeChar.schoolProgress.class2 ? "[X]" : "[ ]";
+                    document.getElementById("chk-class3").textContent = activeChar.schoolProgress && activeChar.schoolProgress.class3 ? "[X]" : "[ ]";
+                    document.getElementById("chk-class4").textContent = activeChar.schoolProgress && activeChar.schoolProgress.class4 ? "[X]" : "[ ]";
+                    document.getElementById("chk-class5").textContent = activeChar.schoolProgress && activeChar.schoolProgress.class5 ? "[X]" : "[ ]";
+                    schoolModal.classList.remove("hidden");
+                });
+            }
 
-        actionsContainer.innerHTML = availableActionsHTML;
-        
-        const openSchoolBtn = document.getElementById("openSchoolBtn");
-        if(openSchoolBtn) {
-            openSchoolBtn.addEventListener("click", () => {
-                const c1 = activeChar.schoolProgress && activeChar.schoolProgress.class1;
-                document.getElementById("chk-class1").textContent = c1 ? "[X]" : "[ ]";
-                document.getElementById("name-class1").innerHTML = `<a href="https://adequateremedy.github.io/Runic-Fally/" style="color: #e3d2b9; text-decoration: underline;">Runic-Fally</a>`;
-                document.getElementById("chk-class2").textContent = activeChar.schoolProgress && activeChar.schoolProgress.class2 ? "[X]" : "[ ]";
-                document.getElementById("chk-class3").textContent = activeChar.schoolProgress && activeChar.schoolProgress.class3 ? "[X]" : "[ ]";
-                document.getElementById("chk-class4").textContent = activeChar.schoolProgress && activeChar.schoolProgress.class4 ? "[X]" : "[ ]";
-                document.getElementById("chk-class5").textContent = activeChar.schoolProgress && activeChar.schoolProgress.class5 ? "[X]" : "[ ]";
-                schoolModal.classList.remove("hidden");
-            });
-        }
+            const openJournalBtn = document.getElementById("openJournalBtn");
+            if (openJournalBtn) {
+                openJournalBtn.addEventListener("click", () => {
+                    renderJournalModalContent();
+                    document.getElementById("journalModal").classList.remove("hidden");
+                });
+            }
 
-        const openJournalBtn = document.getElementById("openJournalBtn");
-        if (openJournalBtn) {
-            openJournalBtn.addEventListener("click", () => {
-                renderJournalModalContent();
-                document.getElementById("journalModal").classList.remove("hidden");
-            });
-        }
-
-        const openRpBtn = document.getElementById("openRpBtn");
-        if (openRpBtn) {
-            openRpBtn.addEventListener("click", () => {
-                renderRpModalContent();
-                document.getElementById("rpModal").classList.remove("hidden");
-            });
+            const openRpBtn = document.getElementById("openRpBtn");
+            if (openRpBtn) {
+                openRpBtn.addEventListener("click", () => {
+                    renderRpModalContent();
+                    document.getElementById("rpModal").classList.remove("hidden");
+                });
+            }
         }
     }
 }
@@ -1252,6 +1405,9 @@ async function handleUserReady(user) {
     showLoading("Syncing profile data...");
     await loadSystemUpdates(); 
     await getDriveAppData();
+    
+    // Default load Gen 1 Steampunk template into the container before manipulating UI
+    await loadEraTemplate('steampunk');
 
     const activeChar = playerJsonData.stars[activeStar].gens[activeGen];
     const urlParams = new URLSearchParams(window.location.search);
@@ -1342,100 +1498,6 @@ saveStarBtn.addEventListener("click", async () => {
         await saveDriveAppData();
         await buildHubUI(auth.currentUser);
         hideLoading();
-    }
-});
-
-saveNameBtn.addEventListener("click", async () => {
-    const val = editNameInput.value.trim();
-    if (val) {
-        showLoading("Saving...");
-        playerJsonData.stars[activeStar].gens[activeGen].characterName = val;
-        uiName.textContent = val;
-        uiName.classList.remove("hidden");
-        editNameContainer.classList.add("hidden");
-        gen1NameDisplay.textContent = `${val} - Steampunk`;
-        await saveDriveAppData();
-        await buildHubUI(auth.currentUser);
-        hideLoading();
-    }
-});
-
-const fileInput = document.getElementById("portrait-file-input");
-
-uploadBtn.addEventListener("click", () => fileInput.click());
-
-fileInput.addEventListener("change", async (e) => {
-    if (e.target.files && e.target.files[0]) {
-        const file = e.target.files[0];
-        
-        if (file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif') || (file.type && !file.type.startsWith('image/'))) {
-            alert("HEIC or unsupported format detected. Please select a standard JPG, PNG, or WebP image.");
-            fileInput.value = "";
-            return;
-        }
-
-        uploadBtn.textContent = "Processing...";
-        uploadBtn.disabled = true;
-        try {
-            const reader = new FileReader();
-
-            reader.onload = function(event) {
-                const img = new Image();
-                img.onload = async function() {
-                    const canvas = document.createElement("canvas");
-                    const ctx = canvas.getContext("2d");
-
-                    const MAX_SIZE = 200;
-                    let width = img.width;
-                    let height = img.height;
-
-                    if (width > height) {
-                        if (width > MAX_SIZE) {
-                            height *= MAX_SIZE / width;
-                            width = MAX_SIZE;
-                        }
-                    } else {
-                        if (height > MAX_SIZE) {
-                            width *= MAX_SIZE / height;
-                            height = MAX_SIZE;
-                        }
-                    }
-
-                    canvas.width = width;
-                    canvas.height = height;
-
-                    ctx.drawImage(img, 0, 0, width, height);
-
-                    const base64String = canvas.toDataURL("image/jpeg", 0.7);
-
-                    playerJsonData.stars[activeStar].gens[activeGen].portraitUrl = base64String;
-                    await saveDriveAppData(); 
-                    
-                    document.getElementById("ui-portrait-img").src = base64String;
-                    await buildHubUI(auth.currentUser);
-
-                    uploadBtn.textContent = "Upload Image";
-                    uploadBtn.disabled = false;
-                };
-                img.onerror = function() {
-                    alert("Could not process this image format. Please convert to JPG or PNG.");
-                    uploadBtn.textContent = "Upload Image";
-                    uploadBtn.disabled = false;
-                };
-                img.src = event.target.result;
-            };
-            reader.onerror = function() {
-                alert("Failed to read file.");
-                uploadBtn.textContent = "Upload Image";
-                uploadBtn.disabled = false;
-            };
-            reader.readAsDataURL(file);
-        } catch (err) {
-            console.error("Image processing failed", err);
-            alert("Failed to process and save image.");
-            uploadBtn.textContent = "Upload Image";
-            uploadBtn.disabled = false;
-        }
     }
 });
 
