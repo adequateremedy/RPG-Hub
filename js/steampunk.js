@@ -1,18 +1,6 @@
-import { 
-    getPlayerData, 
-    getActiveStar, 
-    getActiveGen, 
-    showLoading, 
-    hideLoading, 
-    uploadImageToDrive, 
-    saveDriveAppData, 
-    triggerHubBuild, 
-    getAuth 
-} from './hub.js';
-
 export function getCurrentAgeGroup() {
-    const data = getPlayerData();
-    const activeChar = data.stars[getActiveStar()].gens[getActiveGen()];
+    const data = window.HubAPI.getPlayerData();
+    const activeChar = data.stars[window.HubAPI.getActiveStar()].gens[window.HubAPI.getActiveGen()];
     if (!activeChar.schoolProgress || !activeChar.schoolProgress.class1) return "2-3";
     if (!activeChar.schoolProgress.class2) return "4-5";
     if (!activeChar.schoolProgress.class3) return "6-7";
@@ -53,8 +41,8 @@ let queuedRpImages = [];
 
 function attachJournalModalListeners() {
     const currentAgeGroup = getCurrentAgeGroup();
-    const data = getPlayerData();
-    const activeChar = data.stars[getActiveStar()].gens[getActiveGen()];
+    const data = window.HubAPI.getPlayerData();
+    const activeChar = data.stars[window.HubAPI.getActiveStar()].gens[window.HubAPI.getActiveGen()];
     const journalSceneSelect = document.getElementById("journalSceneSelect");
     if (!journalSceneSelect) return;
 
@@ -106,12 +94,12 @@ function attachJournalModalListeners() {
         if (words < 500) return alert(`Your entry is ${words} words. A minimum of 500 words is required for Solo Writing.`);
         if (files.length < 3 || files.length > 10) return alert(`You selected ${files.length} images. You must upload between 3 and 10 images for Journals.`);
 
-        showLoading("Saving journal entry and uploading images. Please wait...");
+        window.HubAPI.showLoading("Saving journal entry and uploading images. Please wait...");
         
         try {
             const imageFileIds = [];
             for (let i = 0; i < files.length; i++) {
-                imageFileIds.push(await uploadImageToDrive(files[i]));
+                imageFileIds.push(await window.HubAPI.uploadImageToDrive(files[i]));
             }
 
             const newEntry = {
@@ -126,15 +114,15 @@ function attachJournalModalListeners() {
             activeChar.exp = (activeChar.exp || 0) + 10;
             queuedJournalImages = []; 
             
-            await saveDriveAppData();
-            hideLoading();
+            await window.HubAPI.saveDriveAppData();
+            window.HubAPI.hideLoading();
             
             document.getElementById("journalModal").classList.add("hidden");
-            await triggerHubBuild(getAuth().currentUser);
+            await window.HubAPI.triggerHubBuild(window.HubAPI.getAuth().currentUser);
             alert("Journal entry saved! +10 EXP awarded.");
         } catch (err) {
             console.error(err);
-            hideLoading();
+            window.HubAPI.hideLoading();
             alert("Failed to save journal entry. Check console for details.");
         }
     });
@@ -142,8 +130,8 @@ function attachJournalModalListeners() {
 
 function attachRpModalListeners() {
     const currentAgeGroup = getCurrentAgeGroup();
-    const data = getPlayerData();
-    const activeChar = data.stars[getActiveStar()].gens[getActiveGen()];
+    const data = window.HubAPI.getPlayerData();
+    const activeChar = data.stars[window.HubAPI.getActiveStar()].gens[window.HubAPI.getActiveGen()];
     const rpLocSelect = document.getElementById("rpLocationSelect");
     if (!rpLocSelect) return;
 
@@ -202,12 +190,12 @@ function attachRpModalListeners() {
         if (words < 500) return alert(`Your story is ${words} words. A minimum of 500 words is required for RP Sessions.`);
         if (files.length < 5 || files.length > 10) return alert(`You selected ${files.length} images. You must upload between 5 and 10 images for RP Sessions.`);
 
-        showLoading("Saving RP session and uploading images. Please wait...");
+        window.HubAPI.showLoading("Saving RP session and uploading images. Please wait...");
         
         try {
             const imageFileIds = [];
             for (let i = 0; i < files.length; i++) {
-                imageFileIds.push(await uploadImageToDrive(files[i]));
+                imageFileIds.push(await window.HubAPI.uploadImageToDrive(files[i]));
             }
 
             const newEntry = {
@@ -223,15 +211,15 @@ function attachRpModalListeners() {
             activeChar.exp = (activeChar.exp || 0) + 10;
             queuedRpImages = []; 
             
-            await saveDriveAppData();
-            hideLoading();
+            await window.HubAPI.saveDriveAppData();
+            window.HubAPI.hideLoading();
 
             document.getElementById("rpModal").classList.add("hidden");
-            await triggerHubBuild(getAuth().currentUser);
+            await window.HubAPI.triggerHubBuild(window.HubAPI.getAuth().currentUser);
             alert("RP Session submitted! +10 EXP awarded. (Saved to Star Tome data).");
         } catch (err) {
             console.error(err);
-            hideLoading();
+            window.HubAPI.hideLoading();
             alert("Failed to submit RP session. Check console for details.");
         }
     });
@@ -239,8 +227,8 @@ function attachRpModalListeners() {
 
 export function renderJournalModalContent() {
     const currentAgeGroup = getCurrentAgeGroup();
-    const data = getPlayerData();
-    const activeChar = data.stars[getActiveStar()].gens[getActiveGen()];
+    const data = window.HubAPI.getPlayerData();
+    const activeChar = data.stars[window.HubAPI.getActiveStar()].gens[window.HubAPI.getActiveGen()];
     const ageJournalsCount = (activeChar.journalEntries || []).filter(e => (e.ageGroup || "2-3") === currentAgeGroup).length;
     const container = document.getElementById("journalModalContent");
 
@@ -301,8 +289,8 @@ export function renderJournalModalContent() {
 
 export function renderRpModalContent() {
     const currentAgeGroup = getCurrentAgeGroup();
-    const data = getPlayerData();
-    const activeChar = data.stars[getActiveStar()].gens[getActiveGen()];
+    const data = window.HubAPI.getPlayerData();
+    const activeChar = data.stars[window.HubAPI.getActiveStar()].gens[window.HubAPI.getActiveGen()];
     const ageRpCount = (activeChar.rpSessions || []).filter(e => (e.ageGroup || "2-3") === currentAgeGroup).length;
     const container = document.getElementById("rpModalContent");
 
