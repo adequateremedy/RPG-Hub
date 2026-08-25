@@ -39,6 +39,10 @@ let playerJsonData = {};
 let queuedJournalImages = [];
 let queuedRpImages = [];
 
+// Dynamic Routing Pointers
+let activeStar = "1";
+let activeGen = "1";
+
 // DOM Elements
 const loginScreen = document.getElementById("loginScreen");
 const loadingScreen = document.getElementById("loadingScreen");
@@ -133,7 +137,7 @@ async function loadSystemUpdates() {
 // --- UPDATES AUTO-EXPIRE FILTER ---
 function getActiveUpdates() {
     return SYSTEM_UPDATES.filter(u => {
-        if (playerJsonData.dismissedUpdates && playerJsonData.dismissedUpdates.includes(u.id)) return false;
+        if (playerJsonData.account && playerJsonData.account.dismissedUpdates && playerJsonData.account.dismissedUpdates.includes(u.id)) return false;
         return true;
     });
 }
@@ -149,9 +153,10 @@ document.querySelectorAll('.tier-2 .tab-btn:not(.disabled)').forEach(btn => {
             document.getElementById("gen-1-content").classList.add("hidden");
             
             let changed = false;
+            if (!playerJsonData.account.seenUpdates) playerJsonData.account.seenUpdates = [];
             getActiveUpdates().forEach(u => {
-                if (!playerJsonData.seenUpdates.includes(u.id)) {
-                    playerJsonData.seenUpdates.push(u.id);
+                if (!playerJsonData.account.seenUpdates.includes(u.id)) {
+                    playerJsonData.account.seenUpdates.push(u.id);
                     changed = true;
                 }
             });
@@ -163,8 +168,10 @@ document.querySelectorAll('.tier-2 .tab-btn:not(.disabled)').forEach(btn => {
             
             renderUpdates();
         } else if (btn.dataset.target === "gen-1") {
+            activeGen = "1";
             document.getElementById("gen-updates-content").classList.add("hidden");
             document.getElementById("gen-1-content").classList.remove("hidden");
+            buildHubUI(auth.currentUser);
         }
     });
 });
@@ -204,8 +211,9 @@ function hideLoading() {
 }
 
 function updateBadge() {
+    if (!playerJsonData.account || !playerJsonData.account.seenUpdates) return;
     const active = getActiveUpdates();
-    const unseen = active.filter(u => !playerJsonData.seenUpdates.includes(u.id));
+    const unseen = active.filter(u => !playerJsonData.account.seenUpdates.includes(u.id));
     const badge = document.getElementById("updates-badge");
     if (unseen.length > 0) {
         badge.textContent = unseen.length;
@@ -260,8 +268,9 @@ document.getElementById("delete-updates-btn").addEventListener("click", async ()
     const confirmDelete = confirm("Are you sure you want to delete the selected updates? This cannot be undone.");
     if (confirmDelete) {
         showLoading("Deleting updates...");
+        if (!playerJsonData.account.dismissedUpdates) playerJsonData.account.dismissedUpdates = [];
         checkboxes.forEach(cb => {
-            playerJsonData.dismissedUpdates.push(cb.value);
+            playerJsonData.account.dismissedUpdates.push(cb.value);
         });
         await saveDriveAppData();
         renderUpdates();
@@ -271,30 +280,32 @@ document.getElementById("delete-updates-btn").addEventListener("click", async ()
 });
 
 async function syncProfileToFirestore(user) {
-    if (!user) return;
-    const charName = playerJsonData.characterName || "Unborn";
-    const sName = playerJsonData.starName || "";
-    const fullName = sName ? `${charName} ${sName}` : charName;
+    if (!user || !playerJsonData.stars || !playerJsonData.stars[activeStar] || !playerJsonData.stars[activeStar].gens[activeGen]) return;
+    
+    const activeChar = playerJsonData.stars[activeStar].gens[activeGen];
+    const starName = playerJsonData.stars[activeStar].starName || "";
+    const charName = activeChar.characterName || "Unborn";
+    const fullName = starName ? `${charName} ${starName}` : charName;
     
     const memberData = {
         googleUid: user.uid,
         email: user.email,
         displayName: user.displayName || "",
         characterName: charName,
-        starName: sName,
+        starName: starName,
         fullName: fullName,
-        level: playerJsonData.level || 1,
-        exp: playerJsonData.exp || 0,
-        era: "Gen 1 - Steampunk",
-        portraitUrl: playerJsonData.portraitUrl || "", 
-        bloodlineCourt: playerJsonData.bloodlineCourt || "---",
-        birthCourt: playerJsonData.birthCourt || "---",
-        essenceType: playerJsonData.essenceType || "---",
-        trigger: playerJsonData.trigger || "---",
-        offensiveMagicName: playerJsonData.offensiveMagicName || "---",
-        offensiveMagicDmg: playerJsonData.offensiveMagicDmg || "---",
-        defensiveMagicName: playerJsonData.defensiveMagicName || "---",
-        defensiveMagicHp: playerJsonData.defensiveMagicHp || "---",
+        level: activeChar.level || 1,
+        exp: activeChar.exp || 0,
+        era: activeChar.era || "Steampunk",
+        portraitUrl: activeChar.portraitUrl || "", 
+        bloodlineCourt: activeChar.bloodlineCourt || "---",
+        birthCourt: activeChar.birthCourt || "---",
+        essenceType: activeChar.essenceType || "---",
+        trigger: activeChar.trigger || "---",
+        offensiveMagicName: activeChar.offensiveMagicName || "---",
+        offensiveMagicDmg: activeChar.offensiveMagicDmg || "---",
+        defensiveMagicName: activeChar.defensiveMagicName || "---",
+        defensiveMagicHp: activeChar.defensiveMagicHp || "---",
         updatedAt: serverTimestamp()
     };
     
@@ -324,7 +335,7 @@ async function loadMembersLeaderboard() {
             const name = data.fullName || (data.characterName ? `${data.characterName} ${data.starName || ''}`.trim() : "Unborn");
             const lvl = data.level !== undefined ? data.level : 1;
             const exp = data.exp !== undefined ? data.exp : 0;
-            const era = data.era || "Gen 1 - Steampunk";
+            const era = data.era || "Steampunk";
             
             const tr = document.createElement("tr");
             tr.className = "clickable-member-row";
@@ -451,16 +462,13 @@ async function getDriveAppData() {
                 }
             };
             
-            // Force an immediate save to lock in the new architecture
             await saveDriveAppData();
             console.log("Migration complete and saved to Google Drive.");
         } else {
-            // Already migrated
             playerJsonData = rawData;
         }
 
     } else {
-        // Brand new player generation logic
         playerJsonData = {
             account: { unlockedStars: 1, dismissedUpdates: [], seenUpdates: [] },
             stars: {
@@ -554,18 +562,20 @@ async function getImageUrl(fileId) {
 // --- UI LOGIC ---
 
 function calculateLevel() {
+    const activeChar = playerJsonData.stars[activeStar].gens[activeGen];
     let lvl = 1; 
-    if (playerJsonData.comingOfAgeCompleted) lvl = 2;
-    if (playerJsonData.traumaCompleted) lvl = 3;
-    if (playerJsonData.escapeCompleted) lvl = 4;
-    playerJsonData.level = lvl;
+    if (activeChar.comingOfAgeCompleted) lvl = 2;
+    if (activeChar.traumaCompleted) lvl = 3;
+    if (activeChar.escapeCompleted) lvl = 4;
+    activeChar.level = lvl;
 }
 
 function getCurrentAgeGroup() {
-    if (!playerJsonData.schoolProgress || !playerJsonData.schoolProgress.class1) return "2-3";
-    if (!playerJsonData.schoolProgress.class2) return "4-5";
-    if (!playerJsonData.schoolProgress.class3) return "6-7";
-    if (!playerJsonData.schoolProgress.class4) return "8-9";
+    const activeChar = playerJsonData.stars[activeStar].gens[activeGen];
+    if (!activeChar.schoolProgress || !activeChar.schoolProgress.class1) return "2-3";
+    if (!activeChar.schoolProgress.class2) return "4-5";
+    if (!activeChar.schoolProgress.class3) return "6-7";
+    if (!activeChar.schoolProgress.class4) return "8-9";
     return "10-11";
 }
 
@@ -599,6 +609,7 @@ const journalPromptsByAge = {
 
 function attachJournalModalListeners() {
     const currentAgeGroup = getCurrentAgeGroup();
+    const activeChar = playerJsonData.stars[activeStar].gens[activeGen];
     const journalSceneSelect = document.getElementById("journalSceneSelect");
     if (!journalSceneSelect) return;
 
@@ -665,9 +676,9 @@ function attachJournalModalListeners() {
                 images: imageFileIds
             };
 
-            if(!playerJsonData.journalEntries) playerJsonData.journalEntries = [];
-            playerJsonData.journalEntries.push(newEntry);
-            playerJsonData.exp = (playerJsonData.exp || 0) + 10;
+            if(!activeChar.journalEntries) activeChar.journalEntries = [];
+            activeChar.journalEntries.push(newEntry);
+            activeChar.exp = (activeChar.exp || 0) + 10;
             queuedJournalImages = []; 
             
             await saveDriveAppData();
@@ -686,6 +697,7 @@ function attachJournalModalListeners() {
 
 function attachRpModalListeners() {
     const currentAgeGroup = getCurrentAgeGroup();
+    const activeChar = playerJsonData.stars[activeStar].gens[activeGen];
     const rpLocSelect = document.getElementById("rpLocationSelect");
     if (!rpLocSelect) return;
 
@@ -760,9 +772,9 @@ function attachRpModalListeners() {
                 images: imageFileIds
             };
 
-            if(!playerJsonData.rpSessions) playerJsonData.rpSessions = [];
-            playerJsonData.rpSessions.push(newEntry);
-            playerJsonData.exp = (playerJsonData.exp || 0) + 10;
+            if(!activeChar.rpSessions) activeChar.rpSessions = [];
+            activeChar.rpSessions.push(newEntry);
+            activeChar.exp = (activeChar.exp || 0) + 10;
             queuedRpImages = []; 
             
             await saveDriveAppData();
@@ -781,7 +793,8 @@ function attachRpModalListeners() {
 
 function renderJournalModalContent() {
     const currentAgeGroup = getCurrentAgeGroup();
-    const ageJournalsCount = (playerJsonData.journalEntries || []).filter(e => (e.ageGroup || "2-3") === currentAgeGroup).length;
+    const activeChar = playerJsonData.stars[activeStar].gens[activeGen];
+    const ageJournalsCount = (activeChar.journalEntries || []).filter(e => (e.ageGroup || "2-3") === currentAgeGroup).length;
     const container = document.getElementById("journalModalContent");
 
     if (ageJournalsCount >= 3) {
@@ -841,7 +854,8 @@ function renderJournalModalContent() {
 
 function renderRpModalContent() {
     const currentAgeGroup = getCurrentAgeGroup();
-    const ageRpCount = (playerJsonData.rpSessions || []).filter(e => (e.ageGroup || "2-3") === currentAgeGroup).length;
+    const activeChar = playerJsonData.stars[activeStar].gens[activeGen];
+    const ageRpCount = (activeChar.rpSessions || []).filter(e => (e.ageGroup || "2-3") === currentAgeGroup).length;
     const container = document.getElementById("rpModalContent");
 
     if (ageRpCount >= 5) {
@@ -907,8 +921,9 @@ function renderRpModalContent() {
 }
 
 async function renderInventory() {
+    const activeChar = playerJsonData.stars[activeStar].gens[activeGen];
     const inventoryGrid = document.getElementById("inventoryGrid");
-    const items = playerJsonData.inventory || [];
+    const items = activeChar.inventory || [];
     
     if (items.length === 0) {
         inventoryGrid.innerHTML = `<p style="text-align:center; opacity:0.7; grid-column: 1 / -1;">Your inventory is empty.</p>`;
@@ -961,18 +976,19 @@ async function renderInventory() {
 }
 
 async function renderJournalAndGallery() {
+    const activeChar = playerJsonData.stars[activeStar].gens[activeGen];
     const journalContainer = document.getElementById("journalEntriesContainer");
     const galleryListContainer = document.getElementById("galleryListContainer");
     
-    const jEntries = playerJsonData.journalEntries || [];
-    const rpEntries = playerJsonData.rpSessions || [];
+    const jEntries = activeChar.journalEntries || [];
+    const rpEntries = activeChar.rpSessions || [];
     galleryListContainer.innerHTML = "";
 
-    if (playerJsonData.birthCourt) {
-        const bbImageUrl = `https://adequateremedy.github.io/BirthBook/assets/${playerJsonData.birthCourt}-Result.png`;
+    if (activeChar.birthCourt) {
+        const bbImageUrl = `https://adequateremedy.github.io/BirthBook/assets/${activeChar.birthCourt}-Result.png`;
         const li = document.createElement("li");
         li.className = "gallery-item";
-        li.textContent = `Birth Book - ${playerJsonData.birthCourt} Court`;
+        li.textContent = `Birth Book - ${activeChar.birthCourt} Court`;
         li.addEventListener("click", () => {
             lightboxImg.src = bbImageUrl;
             lightboxModal.classList.remove("hidden");
@@ -980,7 +996,7 @@ async function renderJournalAndGallery() {
         galleryListContainer.appendChild(li);
     }
 
-    let hasImages = !!playerJsonData.birthCourt;
+    let hasImages = !!activeChar.birthCourt;
     
     // Journal Images
     for (let i = 0; i < jEntries.length; i++) {
@@ -1057,8 +1073,11 @@ async function buildHubUI(user) {
     calculateLevel();
     updateBadge(); 
 
-    if (playerJsonData.starName) {
-        starNameDisplay.textContent = playerJsonData.starName;
+    const activeChar = playerJsonData.stars[activeStar].gens[activeGen];
+    const starName = playerJsonData.stars[activeStar].starName;
+
+    if (starName) {
+        starNameDisplay.textContent = starName;
         editStarBtn.classList.add("hidden");
         editStarContainer.classList.add("hidden");
     } else {
@@ -1066,12 +1085,12 @@ async function buildHubUI(user) {
         editStarBtn.classList.remove("hidden");
     }
 
-    gen1NameDisplay.textContent = playerJsonData.characterName ? `${playerJsonData.characterName} - Steampunk` : "Gen 1 - Steampunk";
+    gen1NameDisplay.textContent = activeChar.characterName ? `${activeChar.characterName} - Steampunk` : "Gen 1 - Steampunk";
 
     for (const [elementId, dataKey] of Object.entries(elementsToUpdate)) {
         const el = document.getElementById(elementId);
         if (!el) continue; 
-        const val = playerJsonData[dataKey];
+        const val = activeChar[dataKey];
         if (val !== undefined && val !== "" && val !== null) {
             el.textContent = val;
             el.classList.remove("not-configured");
@@ -1087,11 +1106,11 @@ async function buildHubUI(user) {
         }
     }
 
-    if (playerJsonData.portraitUrl) {
-        document.getElementById("ui-portrait-img").src = playerJsonData.portraitUrl;
-    } else if (playerJsonData.portraitId) {
+    if (activeChar.portraitUrl) {
+        document.getElementById("ui-portrait-img").src = activeChar.portraitUrl;
+    } else if (activeChar.portraitId) {
         try {
-            const imgUrl = await getImageUrl(playerJsonData.portraitId);
+            const imgUrl = await getImageUrl(activeChar.portraitId);
             document.getElementById("ui-portrait-img").src = imgUrl;
         } catch (err) {
             console.warn("Failed to load portrait image.", err);
@@ -1101,15 +1120,15 @@ async function buildHubUI(user) {
         document.getElementById("ui-portrait-img").src = DEFAULT_PORTRAIT;
     }
 
-    if (playerJsonData.birthBookCompleted) {
+    if (activeChar.birthBookCompleted) {
         uploadBtn.classList.remove("hidden"); 
 
-        if (!playerJsonData.characterName) {
+        if (!activeChar.characterName) {
             uiName.textContent = "Unborn";
             uiName.classList.add("hidden");
             editNameContainer.classList.remove("hidden");
         } else {
-            uiName.textContent = playerJsonData.characterName;
+            uiName.textContent = activeChar.characterName;
             uiName.classList.remove("hidden");
             editNameContainer.classList.add("hidden");
         }
@@ -1126,10 +1145,10 @@ async function buildHubUI(user) {
     const actionsContainer = document.getElementById("actionsContainer");
     actionsContainer.innerHTML = "";
     
-    const isBirthBookComplete = playerJsonData.birthBookCompleted;
-    const hasCharacterName = !!playerJsonData.characterName;
-    const hasStarName = !!playerJsonData.starName;
-    const hasPortrait = !!playerJsonData.portraitUrl || !!playerJsonData.portraitId;
+    const isBirthBookComplete = activeChar.birthBookCompleted;
+    const hasCharacterName = !!activeChar.characterName;
+    const hasStarName = !!starName;
+    const hasPortrait = !!activeChar.portraitUrl || !!activeChar.portraitId;
     const isFullySetup = isBirthBookComplete && hasCharacterName && hasStarName && hasPortrait;
     
     if (!isBirthBookComplete) {
@@ -1167,7 +1186,7 @@ async function buildHubUI(user) {
     } else {
         let availableActionsHTML = "";
 
-        if (playerJsonData.exp >= 500) {
+        if (activeChar.exp >= 500) {
             availableActionsHTML += `
                 <details class="hub-dropdown">
                     <summary>Trial Books</summary>
@@ -1200,13 +1219,13 @@ async function buildHubUI(user) {
         const openSchoolBtn = document.getElementById("openSchoolBtn");
         if(openSchoolBtn) {
             openSchoolBtn.addEventListener("click", () => {
-                const c1 = playerJsonData.schoolProgress && playerJsonData.schoolProgress.class1;
+                const c1 = activeChar.schoolProgress && activeChar.schoolProgress.class1;
                 document.getElementById("chk-class1").textContent = c1 ? "[X]" : "[ ]";
                 document.getElementById("name-class1").innerHTML = `<a href="https://adequateremedy.github.io/Runic-Fally/" style="color: #e3d2b9; text-decoration: underline;">Runic-Fally</a>`;
-                document.getElementById("chk-class2").textContent = playerJsonData.schoolProgress && playerJsonData.schoolProgress.class2 ? "[X]" : "[ ]";
-                document.getElementById("chk-class3").textContent = playerJsonData.schoolProgress && playerJsonData.schoolProgress.class3 ? "[X]" : "[ ]";
-                document.getElementById("chk-class4").textContent = playerJsonData.schoolProgress && playerJsonData.schoolProgress.class4 ? "[X]" : "[ ]";
-                document.getElementById("chk-class5").textContent = playerJsonData.schoolProgress && playerJsonData.schoolProgress.class5 ? "[X]" : "[ ]";
+                document.getElementById("chk-class2").textContent = activeChar.schoolProgress && activeChar.schoolProgress.class2 ? "[X]" : "[ ]";
+                document.getElementById("chk-class3").textContent = activeChar.schoolProgress && activeChar.schoolProgress.class3 ? "[X]" : "[ ]";
+                document.getElementById("chk-class4").textContent = activeChar.schoolProgress && activeChar.schoolProgress.class4 ? "[X]" : "[ ]";
+                document.getElementById("chk-class5").textContent = activeChar.schoolProgress && activeChar.schoolProgress.class5 ? "[X]" : "[ ]";
                 schoolModal.classList.remove("hidden");
             });
         }
@@ -1234,22 +1253,23 @@ async function handleUserReady(user) {
     await loadSystemUpdates(); 
     await getDriveAppData();
 
+    const activeChar = playerJsonData.stars[activeStar].gens[activeGen];
     const urlParams = new URLSearchParams(window.location.search);
     const urlBirthCourt = urlParams.get('birthCourt');
     const urlBloodlineCourt = urlParams.get('bloodlineCourt');
     let dataChanged = false;
 
-    if (urlBirthCourt && urlBloodlineCourt && !playerJsonData.stars) {
-        playerJsonData.birthCourt = urlBirthCourt;
-        playerJsonData.bloodlineCourt = urlBloodlineCourt;
-        playerJsonData.birthBookCompleted = true;
+    if (urlBirthCourt && urlBloodlineCourt && !activeChar.birthCourt) {
+        activeChar.birthCourt = urlBirthCourt;
+        activeChar.bloodlineCourt = urlBloodlineCourt;
+        activeChar.birthBookCompleted = true;
         dataChanged = true;
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 
-    if (!playerJsonData.stars && playerJsonData.birthBookCompleted && (playerJsonData.exp || 0) < 50) {
-        playerJsonData.exp = 50;
-        playerJsonData.birthBookExpAwarded = true; 
+    if (activeChar.birthBookCompleted && (activeChar.exp || 0) < 50) {
+        activeChar.exp = 50;
+        activeChar.birthBookExpAwarded = true; 
         dataChanged = true;
     }
 
@@ -1308,14 +1328,14 @@ document.getElementById("signOutButton").addEventListener("click", async () => {
 
 editStarBtn.addEventListener("click", () => {
     editStarContainer.classList.toggle("hidden");
-    editStarInput.value = playerJsonData.starName || "";
+    editStarInput.value = playerJsonData.stars[activeStar].starName || "";
 });
 
 saveStarBtn.addEventListener("click", async () => {
     const val = editStarInput.value.trim();
     if (val) {
         showLoading("Saving...");
-        playerJsonData.starName = val;
+        playerJsonData.stars[activeStar].starName = val;
         starNameDisplay.textContent = val;
         editStarContainer.classList.add("hidden");
         editStarBtn.classList.add("hidden");
@@ -1329,7 +1349,7 @@ saveNameBtn.addEventListener("click", async () => {
     const val = editNameInput.value.trim();
     if (val) {
         showLoading("Saving...");
-        playerJsonData.characterName = val;
+        playerJsonData.stars[activeStar].gens[activeGen].characterName = val;
         uiName.textContent = val;
         uiName.classList.remove("hidden");
         editNameContainer.classList.add("hidden");
@@ -1388,7 +1408,7 @@ fileInput.addEventListener("change", async (e) => {
 
                     const base64String = canvas.toDataURL("image/jpeg", 0.7);
 
-                    playerJsonData.portraitUrl = base64String;
+                    playerJsonData.stars[activeStar].gens[activeGen].portraitUrl = base64String;
                     await saveDriveAppData(); 
                     
                     document.getElementById("ui-portrait-img").src = base64String;
