@@ -359,12 +359,13 @@ export function renderRpModalContent() {
 export function renderAvailableActions(actionsContainer, activeChar) {
     let availableActionsHTML = "";
 
+    // HIDDEN ENTIRELY UNTIL 450 EXP
     if (activeChar.exp >= 450) {
         availableActionsHTML += `
             <details class="hub-dropdown">
                 <summary>Trial Books</summary>
-                <div class="dropdown-content">
-                    <button onclick="window.location.href='https://adequateremedy.github.io/Awakening_Essence/'" style="border-color: #7F522B; color: #e3d2b9; padding: 12px 20px; font-weight: bold; width: 100%; max-width: 400px; display: block; margin: 0 auto;">Play Awakening Essence</button>
+                <div class="dropdown-content" style="text-align:center;">
+                    <button id="openAwakeningBtn" style="border-color: #7F522B; color: #e3d2b9; padding: 12px 20px; font-weight: bold; width: 100%; max-width: 400px;">Awakening Essence</button>
                 </div>
             </details>
         `;
@@ -389,6 +390,25 @@ export function renderAvailableActions(actionsContainer, activeChar) {
 
     actionsContainer.innerHTML = availableActionsHTML;
     
+    // Trial Books: Awakening Essence Modal Logic
+    const openAwakeningBtn = document.getElementById("openAwakeningBtn");
+    if (openAwakeningBtn) {
+        openAwakeningBtn.addEventListener("click", () => {
+            const coa = activeChar.comingOfAgeCompleted;
+            document.getElementById("chk-comingOfAge").textContent = coa ? "[X]" : "[ ]";
+            document.getElementById("awakeningModal").classList.remove("hidden");
+        });
+    }
+
+    // Close button logic for Awakening Modal
+    const closeAwakeningBtn = document.getElementById("closeAwakeningBtn");
+    if (closeAwakeningBtn) {
+        closeAwakeningBtn.addEventListener("click", () => {
+            document.getElementById("awakeningModal").classList.add("hidden");
+        });
+    }
+    
+    // Echoes: School Modal Logic
     const openSchoolBtn = document.getElementById("openSchoolBtn");
     if(openSchoolBtn) {
         openSchoolBtn.addEventListener("click", () => {
@@ -403,6 +423,7 @@ export function renderAvailableActions(actionsContainer, activeChar) {
         });
     }
 
+    // Experiences: Journal Logic
     const openJournalBtn = document.getElementById("openJournalBtn");
     if (openJournalBtn) {
         openJournalBtn.addEventListener("click", () => {
@@ -411,6 +432,7 @@ export function renderAvailableActions(actionsContainer, activeChar) {
         });
     }
 
+    // Experiences: RP Session Logic
     const openRpBtn = document.getElementById("openRpBtn");
     if (openRpBtn) {
         openRpBtn.addEventListener("click", () => {
