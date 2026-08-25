@@ -15,7 +15,6 @@ const firebaseConfig = {
     measurementId: "G-S6PXC09F52"
 };
 
-// PREVENTS DOUBLE-EXECUTION CRASH ON GITHUB PAGES
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -41,6 +40,19 @@ let playerJsonData = {};
 // Dynamic Routing Pointers
 let activeStar = "1";
 let activeGen = "1";
+
+// --- GLOBAL BRIDGE API FOR MODULES ---
+window.HubAPI = {
+    getPlayerData: () => playerJsonData,
+    getActiveStar: () => activeStar,
+    getActiveGen: () => activeGen,
+    showLoading,
+    hideLoading,
+    uploadImageToDrive,
+    saveDriveAppData,
+    triggerHubBuild: async (user) => await buildHubUI(user),
+    getAuth: () => auth
+};
 
 // DOM Elements (Global / Tier 1 & 2 / Modals)
 const loginScreen = document.getElementById("loginScreen");
@@ -86,7 +98,6 @@ const elementsToUpdate = {
 async function loadEraTemplate(eraId) {
     const container = document.getElementById('era-content-container');
     
-    // Prevent reloading if the requested template is already active
     if (container.dataset.activeEra === eraId) return;
 
     showLoading(`Loading ${eraId} interface...`);
@@ -99,7 +110,6 @@ async function loadEraTemplate(eraId) {
         container.innerHTML = html;
         container.dataset.activeEra = eraId;
         
-        // Re-bind all dynamic elements inside the newly loaded template
         bindEraEvents();
         
     } catch (error) {
@@ -110,9 +120,7 @@ async function loadEraTemplate(eraId) {
     hideLoading();
 }
 
-// Re-binds event listeners for DOM elements that were just injected
 function bindEraEvents() {
-    // Tier 3 Tabs logic 
     document.querySelectorAll('.tier-3 .tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.tier-3 .tab-btn').forEach(b => b.classList.remove('active'));
@@ -126,7 +134,6 @@ function bindEraEvents() {
         });
     });
 
-    // Name Editor Logic
     const saveNameBtn = document.getElementById("save-name-btn");
     const editNameInput = document.getElementById("edit-name-input");
     const uiName = document.getElementById("ui-name");
@@ -153,7 +160,6 @@ function bindEraEvents() {
         });
     }
 
-    // Portrait Upload Logic
     const uploadBtn = document.getElementById("ui-portrait-upload-btn");
     const fileInput = document.getElementById("portrait-file-input");
 
@@ -239,7 +245,6 @@ function bindEraEvents() {
     }
 }
 
-// --- GITHUB API FOLDER SCANNER ---
 async function loadSystemUpdates() {
     try {
         const res = await fetch('https://api.github.com/repos/adequateremedy/RPG-Hub/contents/assets/images/updates');
@@ -266,7 +271,6 @@ async function loadSystemUpdates() {
             }
         });
 
-        // Sort by Date Descending, then Version Descending
         validUpdates.sort((a, b) => {
             const dateDiff = new Date(b.date) - new Date(a.date);
             if (dateDiff !== 0) return dateDiff;
@@ -283,7 +287,6 @@ async function loadSystemUpdates() {
     }
 }
 
-// --- UPDATES AUTO-EXPIRE FILTER ---
 function getActiveUpdates() {
     return SYSTEM_UPDATES.filter(u => {
         if (playerJsonData.account && playerJsonData.account.dismissedUpdates && playerJsonData.account.dismissedUpdates.includes(u.id)) return false;
@@ -291,7 +294,6 @@ function getActiveUpdates() {
     });
 }
 
-// Tier 2 Tabs logic 
 document.querySelectorAll('.tier-2 .tab-btn:not(.disabled)').forEach(btn => {
     btn.addEventListener('click', async () => {
         document.querySelectorAll('.tier-2 .tab-btn').forEach(b => b.classList.remove('active'));
@@ -700,8 +702,6 @@ async function getImageUrl(fileId) {
     return URL.createObjectURL(blob);
 }
 
-// --- UI LOGIC ---
-
 function calculateLevel() {
     const activeChar = playerJsonData.stars[activeStar].gens[activeGen];
     let lvl = 1; 
@@ -793,7 +793,6 @@ async function renderJournalAndGallery() {
 
     let hasImages = !!activeChar.birthCourt;
     
-    // Journal Images
     for (let i = 0; i < jEntries.length; i++) {
         const entry = jEntries[i];
         if (entry.images && entry.images.length > 0) {
@@ -815,7 +814,6 @@ async function renderJournalAndGallery() {
         }
     }
 
-    // RP Session Images
     for (let i = 0; i < rpEntries.length; i++) {
         const entry = rpEntries[i];
         if (entry.images && entry.images.length > 0) {
@@ -1202,10 +1200,3 @@ if (itemModalImg) {
         }
     });
 }
-
-export function getPlayerData() { return playerJsonData; }
-export function getActiveStar() { return activeStar; }
-export function getActiveGen() { return activeGen; }
-export function getAuth() { return auth; }
-export async function triggerHubBuild(user) { return await buildHubUI(user); }
-export { showLoading, hideLoading, uploadImageToDrive, saveDriveAppData };
