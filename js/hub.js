@@ -1,4 +1,4 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
 import { 
     getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence 
 } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-auth.js";
@@ -15,7 +15,8 @@ const firebaseConfig = {
     measurementId: "G-S6PXC09F52"
 };
 
-const app = initializeApp(firebaseConfig);
+// PREVENTS DOUBLE-EXECUTION CRASH ON GITHUB PAGES
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
 
@@ -49,7 +50,6 @@ const playerScreen = document.getElementById("playerScreen");
 const errorMsg = document.getElementById("errorMessage");
 
 const starNameDisplay = document.getElementById("star-name-display");
-const gen1NameDisplay = document.getElementById("gen-1-name");
 const editStarBtn = document.getElementById("edit-star-name-btn");
 const editStarContainer = document.getElementById("edit-star-container");
 const editStarInput = document.getElementById("edit-star-input");
@@ -131,6 +131,7 @@ function bindEraEvents() {
     const editNameInput = document.getElementById("edit-name-input");
     const uiName = document.getElementById("ui-name");
     const editNameContainer = document.getElementById("edit-name-container");
+    const gen1NameDisplay = document.getElementById("gen-1-name");
 
     if (saveNameBtn && editNameInput) {
         saveNameBtn.addEventListener("click", async () => {
@@ -143,8 +144,7 @@ function bindEraEvents() {
                     uiName.classList.remove("hidden");
                 }
                 if (editNameContainer) editNameContainer.classList.add("hidden");
-                
-                gen1NameDisplay.textContent = `${val} - Steampunk`; // Assuming Steampunk for Gen 1 currently
+                if (gen1NameDisplay) gen1NameDisplay.textContent = `${val} - Steampunk`; 
                 
                 await saveDriveAppData();
                 await buildHubUI(auth.currentUser);
@@ -395,26 +395,29 @@ function renderUpdates() {
     });
 }
 
-document.getElementById("delete-updates-btn").addEventListener("click", async () => {
-    const checkboxes = document.querySelectorAll('.update-checkbox:checked');
-    if (checkboxes.length === 0) {
-        alert("Please select at least one update to delete.");
-        return;
-    }
-    
-    const confirmDelete = confirm("Are you sure you want to delete the selected updates? This cannot be undone.");
-    if (confirmDelete) {
-        showLoading("Deleting updates...");
-        if (!playerJsonData.account.dismissedUpdates) playerJsonData.account.dismissedUpdates = [];
-        checkboxes.forEach(cb => {
-            playerJsonData.account.dismissedUpdates.push(cb.value);
-        });
-        await saveDriveAppData();
-        renderUpdates();
-        updateBadge();
-        hideLoading();
-    }
-});
+const deleteUpdatesBtn = document.getElementById("delete-updates-btn");
+if (deleteUpdatesBtn) {
+    deleteUpdatesBtn.addEventListener("click", async () => {
+        const checkboxes = document.querySelectorAll('.update-checkbox:checked');
+        if (checkboxes.length === 0) {
+            alert("Please select at least one update to delete.");
+            return;
+        }
+        
+        const confirmDelete = confirm("Are you sure you want to delete the selected updates? This cannot be undone.");
+        if (confirmDelete) {
+            showLoading("Deleting updates...");
+            if (!playerJsonData.account.dismissedUpdates) playerJsonData.account.dismissedUpdates = [];
+            checkboxes.forEach(cb => {
+                playerJsonData.account.dismissedUpdates.push(cb.value);
+            });
+            await saveDriveAppData();
+            renderUpdates();
+            updateBadge();
+            hideLoading();
+        }
+    });
+}
 
 async function syncProfileToFirestore(user) {
     if (!user || !playerJsonData.stars || !playerJsonData.stars[activeStar] || !playerJsonData.stars[activeStar].gens[activeGen]) return;
@@ -541,7 +544,6 @@ async function getDriveAppData() {
         });
         let rawData = await fileRes.json();
 
-        // MIGRATION SCRIPT: Convert Flat Data to Nested Star Architecture
         if (!rawData.stars) {
             console.log("Old data format detected. Migrating to Generational System...");
             
@@ -878,6 +880,7 @@ async function buildHubUI(user) {
         editStarBtn.classList.remove("hidden");
     }
 
+    const gen1NameDisplay = document.getElementById("gen-1-name");
     if (gen1NameDisplay) {
         gen1NameDisplay.textContent = activeChar.characterName ? `${activeChar.characterName} - Steampunk` : "Gen 1 - Steampunk";
     }
@@ -997,7 +1000,6 @@ async function handleUserReady(user) {
     await loadSystemUpdates(); 
     await getDriveAppData();
     
-    // Default load Gen 1 Steampunk template into the container before manipulating UI
     await loadEraTemplate('steampunk');
 
     const activeChar = playerJsonData.stars[activeStar].gens[activeGen];
@@ -1046,119 +1048,160 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-document.getElementById("googleSignInButton").addEventListener("click", async () => {
-    loginScreen.classList.add("hidden");
-    showLoading("Signing in...");
+const googleSignInButton = document.getElementById("googleSignInButton");
+if (googleSignInButton) {
+    googleSignInButton.addEventListener("click", async () => {
+        loginScreen.classList.add("hidden");
+        showLoading("Signing in...");
 
-    try {
-        await setPersistence(auth, browserLocalPersistence);
-        const result = await signInWithPopup(auth, provider);
-        const credential = GoogleAuthProvider.credentialFromResult(result);
-        if (credential && credential.accessToken) {
-            gDriveToken = credential.accessToken;
-            localStorage.setItem("gDriveToken", gDriveToken);
+        try {
+            await setPersistence(auth, browserLocalPersistence);
+            const result = await signInWithPopup(auth, provider);
+            const credential = GoogleAuthProvider.credentialFromResult(result);
+            if (credential && credential.accessToken) {
+                gDriveToken = credential.accessToken;
+                localStorage.setItem("gDriveToken", gDriveToken);
+            }
+            await handleUserReady(result.user);
+        } catch (error) {
+            console.error(error);
+            showError("Sign-in or Drive connection failed.\n" + error.message);
         }
-        await handleUserReady(result.user);
-    } catch (error) {
-        console.error(error);
-        showError("Sign-in or Drive connection failed.\n" + error.message);
-    }
-});
+    });
+}
 
-document.getElementById("signOutButton").addEventListener("click", async () => {
-    await signOut(auth);
-    localStorage.removeItem("gDriveToken");
-    gDriveToken = null;
-    playerScreen.classList.add("hidden");
-    loginScreen.classList.remove("hidden");
-});
+const signOutButton = document.getElementById("signOutButton");
+if (signOutButton) {
+    signOutButton.addEventListener("click", async () => {
+        await signOut(auth);
+        localStorage.removeItem("gDriveToken");
+        gDriveToken = null;
+        playerScreen.classList.add("hidden");
+        loginScreen.classList.remove("hidden");
+    });
+}
 
-editStarBtn.addEventListener("click", () => {
-    editStarContainer.classList.toggle("hidden");
-    editStarInput.value = playerJsonData.stars[activeStar].starName || "";
-});
+if (editStarBtn) {
+    editStarBtn.addEventListener("click", () => {
+        if (editStarContainer) editStarContainer.classList.toggle("hidden");
+        if (editStarInput) editStarInput.value = playerJsonData.stars[activeStar].starName || "";
+    });
+}
 
-saveStarBtn.addEventListener("click", async () => {
-    const val = editStarInput.value.trim();
-    if (val) {
-        showLoading("Saving...");
-        playerJsonData.stars[activeStar].starName = val;
-        starNameDisplay.textContent = val;
-        editStarContainer.classList.add("hidden");
-        editStarBtn.classList.add("hidden");
-        await saveDriveAppData();
-        await buildHubUI(auth.currentUser);
-        hideLoading();
-    }
-});
+if (saveStarBtn) {
+    saveStarBtn.addEventListener("click", async () => {
+        if (!editStarInput) return;
+        const val = editStarInput.value.trim();
+        if (val) {
+            showLoading("Saving...");
+            playerJsonData.stars[activeStar].starName = val;
+            if (starNameDisplay) starNameDisplay.textContent = val;
+            if (editStarContainer) editStarContainer.classList.add("hidden");
+            if (editStarBtn) editStarBtn.classList.add("hidden");
+            await saveDriveAppData();
+            await buildHubUI(auth.currentUser);
+            hideLoading();
+        }
+    });
+}
 
-closeSchoolBtn.addEventListener("click", () => {
-    schoolModal.classList.add("hidden");
-});
+if (closeSchoolBtn) {
+    closeSchoolBtn.addEventListener("click", () => {
+        if (schoolModal) schoolModal.classList.add("hidden");
+    });
+}
 
-document.getElementById("closeJournalBtn").addEventListener("click", () => {
-    document.getElementById("journalModal").classList.add("hidden");
-});
+const closeJournalBtn = document.getElementById("closeJournalBtn");
+if (closeJournalBtn) {
+    closeJournalBtn.addEventListener("click", () => {
+        const journalModal = document.getElementById("journalModal");
+        if (journalModal) journalModal.classList.add("hidden");
+    });
+}
 
-document.getElementById("closeRpBtn").addEventListener("click", () => {
-    document.getElementById("rpModal").classList.add("hidden");
-});
+const closeRpBtn = document.getElementById("closeRpBtn");
+if (closeRpBtn) {
+    closeRpBtn.addEventListener("click", () => {
+        const rpModal = document.getElementById("rpModal");
+        if (rpModal) rpModal.classList.add("hidden");
+    });
+}
 
-closeItemModalBtn.addEventListener("click", () => {
-    itemModal.classList.add("hidden");
-});
+if (closeItemModalBtn) {
+    closeItemModalBtn.addEventListener("click", () => {
+        if (itemModal) itemModal.classList.add("hidden");
+    });
+}
 
-closeMemberCardBtn.addEventListener("click", () => {
-    memberCardModal.classList.add("hidden");
-});
+if (closeMemberCardBtn) {
+    closeMemberCardBtn.addEventListener("click", () => {
+        if (memberCardModal) memberCardModal.classList.add("hidden");
+    });
+}
 
-lightboxCloseBtn.addEventListener("click", () => {
-    lightboxModal.classList.add("hidden");
-});
+if (lightboxCloseBtn) {
+    lightboxCloseBtn.addEventListener("click", () => {
+        if (lightboxModal) lightboxModal.classList.add("hidden");
+    });
+}
 
-lightboxModal.addEventListener("click", (e) => {
-    if (e.target === lightboxModal) {
-        lightboxModal.classList.add("hidden");
-    }
-});
+if (lightboxModal) {
+    lightboxModal.addEventListener("click", (e) => {
+        if (e.target === lightboxModal) {
+            lightboxModal.classList.add("hidden");
+        }
+    });
+}
 
-itemModal.addEventListener("click", (e) => {
-    if (e.target === itemModal) {
-        itemModal.classList.add("hidden");
-    }
-});
+if (itemModal) {
+    itemModal.addEventListener("click", (e) => {
+        if (e.target === itemModal) {
+            itemModal.classList.add("hidden");
+        }
+    });
+}
 
-memberCardModal.addEventListener("click", (e) => {
-    if (e.target === memberCardModal) {
-        memberCardModal.classList.add("hidden");
-    }
-});
+if (memberCardModal) {
+    memberCardModal.addEventListener("click", (e) => {
+        if (e.target === memberCardModal) {
+            memberCardModal.classList.add("hidden");
+        }
+    });
+}
 
-document.getElementById("journalModal").addEventListener("click", (e) => {
-    if (e.target === document.getElementById("journalModal")) {
-        document.getElementById("journalModal").classList.add("hidden");
-    }
-});
+const journalModal = document.getElementById("journalModal");
+if (journalModal) {
+    journalModal.addEventListener("click", (e) => {
+        if (e.target === journalModal) {
+            journalModal.classList.add("hidden");
+        }
+    });
+}
 
-document.getElementById("rpModal").addEventListener("click", (e) => {
-    if (e.target === document.getElementById("rpModal")) {
-        document.getElementById("rpModal").classList.add("hidden");
-    }
-});
+const rpModal = document.getElementById("rpModal");
+if (rpModal) {
+    rpModal.addEventListener("click", (e) => {
+        if (e.target === rpModal) {
+            rpModal.classList.add("hidden");
+        }
+    });
+}
 
-itemModalImg.addEventListener("mouseenter", () => {
-    if (itemModalImg.dataset.glowSrc) {
-        itemModalImg.src = itemModalImg.dataset.glowSrc;
-        itemModalImg.style.cursor = "pointer";
-    }
-});
+if (itemModalImg) {
+    itemModalImg.addEventListener("mouseenter", () => {
+        if (itemModalImg.dataset.glowSrc) {
+            itemModalImg.src = itemModalImg.dataset.glowSrc;
+            itemModalImg.style.cursor = "pointer";
+        }
+    });
 
-itemModalImg.addEventListener("mouseleave", () => {
-    if (itemModalImg.dataset.normalSrc) {
-        itemModalImg.src = itemModalImg.dataset.normalSrc;
-        itemModalImg.style.cursor = "default";
-    }
-});
+    itemModalImg.addEventListener("mouseleave", () => {
+        if (itemModalImg.dataset.normalSrc) {
+            itemModalImg.src = itemModalImg.dataset.normalSrc;
+            itemModalImg.style.cursor = "default";
+        }
+    });
+}
 
 export function getPlayerData() { return playerJsonData; }
 export function getActiveStar() { return activeStar; }
