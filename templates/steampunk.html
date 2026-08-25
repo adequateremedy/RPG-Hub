@@ -1,0 +1,126 @@
+<div id="gen-1-content">
+    <!-- TIER 3: SECTION SELECTION -->
+    <div class="tabs tier-3">
+        <button class="tab-btn active" data-target="tab-character">Character Card</button>
+        <button class="tab-btn" data-target="tab-available">Available</button>
+        <button class="tab-btn" data-target="tab-inventory">Inventory</button>
+        <button class="tab-btn" data-target="tab-journal">Journal</button>
+        <button class="tab-btn" data-target="tab-gallery">Gallery</button>
+        <button class="tab-btn" data-target="tab-members" id="tab-members-btn">Members</button>
+    </div>
+
+    <!-- CHARACTER CARD TAB -->
+    <div id="tab-character" class="hub-section active">
+        
+        <div class="card-container">
+            <!-- Portrait -->
+            <div id="ui-portrait-container">
+                <img id="ui-portrait-img" src="" alt="">
+                <button id="ui-portrait-upload-btn" class="hidden">Upload Image</button>
+                <input type="file" id="portrait-file-input" accept="image/*" class="hidden">
+            </div>
+
+            <div id="ui-name" class="abs-stat">Unborn</div>
+            
+            <div id="edit-name-container" class="hidden">
+                <input type="text" id="edit-name-input" placeholder="Enter Character Name">
+                <button id="save-name-btn" type="button">Save</button>
+            </div>
+
+            <div id="ui-lvl-container">
+                <div class="lvl-label">Lvl</div>
+                <div id="ui-lvl">1</div>
+            </div>
+            
+            <div id="ui-exp-container">
+                <div class="exp-label">EXP</div>
+                <div id="ui-exp">0</div>
+            </div>
+
+            <div class="stat-group">
+                <div class="stat-row">
+                    <div class="stat-label">Bloodline Court:</div>
+                    <div class="stat-val abs-stat-text" id="ui-bloodline">---</div>
+                </div>
+                <div class="stat-row">
+                    <div class="stat-label">Birth Court:</div>
+                    <div class="stat-val abs-stat-text" id="ui-birthcourt">---</div>
+                </div>
+                <div class="stat-row">
+                    <div class="stat-label">Essence Type:</div>
+                    <div class="stat-val abs-stat-text" id="ui-essence">---</div>
+                </div>
+                <div class="stat-row">
+                    <div class="stat-label">Trigger:</div>
+                    <div class="stat-val abs-stat-text" id="ui-trigger">---</div>
+                </div>
+
+                <div class="power-section">Magic Power</div>
+
+                <div class="magic-row">
+                    <div class="stat-label">Offensive: <span id="ui-off-name" style="font-weight:normal;">---</span></div>
+                    <div class="stat-val">DMG: <span id="ui-off-dmg">---</span></div>
+                </div>
+                <div class="magic-row">
+                    <div class="stat-label">Defensive: <span id="ui-def-name" style="font-weight:normal;">---</span></div>
+                    <div class="stat-val">HP: <span id="ui-def-hp">---</span></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- AVAILABLE TAB -->
+    <div id="tab-available" class="hub-section">
+        <h2 style="text-align:center; margin-top:20px;">Available Actions</h2>
+        <div id="actionsContainer" style="margin-top:20px; display:flex; flex-direction:column; align-items:center;"></div>
+    </div>
+
+    <!-- INVENTORY TAB -->
+    <div id="tab-inventory" class="hub-section">
+        <h2 style="text-align:center; margin-top:40px;">Inventory</h2>
+        <div id="inventoryGrid" class="inventory-grid">
+            <p style="text-align:center; opacity:0.7; grid-column: 1 / -1;">Your inventory is empty.</p>
+        </div>
+    </div>
+
+    <!-- JOURNAL TAB -->
+    <div id="tab-journal" class="hub-section">
+        <h2 style="text-align:center; margin-top:40px;">Journal</h2>
+        <div id="journalEntriesContainer" style="margin-top:20px;">
+            <p style="text-align:center; opacity:0.7;">No journal entries yet.</p>
+        </div>
+    </div>
+
+    <!-- GALLERY TAB -->
+    <div id="tab-gallery" class="hub-section">
+        <h2 style="text-align:center; margin-top:40px;">Gallery</h2>
+        <div style="max-width: 500px; margin: 0 auto; text-align: left;">
+            <ul id="galleryListContainer" class="gallery-list">
+                <p style="text-align:center; opacity:0.7;">No gallery images found.</p>
+            </ul>
+        </div>
+    </div>
+
+    <!-- MEMBERS TAB -->
+    <div id="tab-members" class="hub-section">
+        <h2 style="text-align:center; margin-top:20px; color:#e3d2b9;">Top 50 Members</h2>
+        <p style="text-align:center; font-size: 0.85rem; opacity: 0.8; margin-top:-10px; margin-bottom: 20px;">(Click a member's name to view their Character Card)</p>
+        <table class="members-table">
+            <thead>
+                <tr>
+                    <th style="width: 10%; text-align: center;">Rank</th>
+                    <th style="width: 40%;">Character</th>
+                    <th style="width: 15%; text-align: center;">Level</th>
+                    <th style="width: 15%; text-align: center;">EXP</th>
+                    <th style="width: 20%; text-align: center;">Era</th>
+                </tr>
+            </thead>
+            <tbody id="membersTableBody">
+                <tr>
+                    <td colspan="5" style="text-align:center; padding:20px; opacity:0.6;">Loading members...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
