@@ -27,7 +27,7 @@ setPersistence(auth, browserLocalPersistence).catch((error) => {
 
 const provider = new GoogleAuthProvider();
 provider.addScope('https://www.googleapis.com/auth/drive.appdata');
-provider.setCustomParameters({ prompt: 'consent' });
+// provider.setCustomParameters({ prompt: 'consent' });
 
 const DEFAULT_PORTRAIT = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='170' height='170' viewBox='0 0 170 170'%3E%3Crect width='170' height='170' fill='%231a1a1a'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23e3d2b9' font-family='sans-serif' font-size='14'%3ENo Image%3C/text%3E%3C/svg%3E";
 
