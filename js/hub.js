@@ -1,3 +1,4 @@
+/* js/hub.js */
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
 import { 
     getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence 
@@ -121,9 +122,10 @@ async function loadEraTemplate(eraId) {
 }
 
 function bindEraEvents() {
-    document.querySelectorAll('.tier-3 .tab-btn').forEach(btn => {
+    // Normal Tab Navigation (ignoring the Character Card trigger)
+    document.querySelectorAll('.tier-3 .tab-btn[data-target]').forEach(btn => {
         btn.addEventListener('click', () => {
-            document.querySelectorAll('.tier-3 .tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tier-3 .tab-btn[data-target]').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.hub-section').forEach(s => s.classList.remove('active'));
             btn.classList.add('active');
             document.getElementById(btn.dataset.target).classList.add('active');
@@ -133,6 +135,31 @@ function bindEraEvents() {
             }
         });
     });
+
+    // Character Card Modal Logic
+    const openCharBtn = document.getElementById("open-character-modal-btn");
+    const myCharModal = document.getElementById("myCharacterModal");
+    const closeCharBtn = document.getElementById("closeMyCharacterBtn");
+
+    if (openCharBtn) {
+        openCharBtn.addEventListener("click", () => {
+            if (myCharModal) myCharModal.classList.remove("hidden");
+        });
+    }
+    
+    if (closeCharBtn) {
+        closeCharBtn.addEventListener("click", () => {
+            if (myCharModal) myCharModal.classList.add("hidden");
+        });
+    }
+    
+    if (myCharModal) {
+        myCharModal.addEventListener("click", (e) => {
+            if (e.target === myCharModal) {
+                myCharModal.classList.add("hidden");
+            }
+        });
+    }
 
     const saveNameBtn = document.getElementById("save-name-btn");
     const editNameInput = document.getElementById("edit-name-input");
