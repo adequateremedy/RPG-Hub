@@ -412,13 +412,23 @@ export function renderAvailableActions(actionsContainer, activeChar) {
     const openSchoolBtn = document.getElementById("openSchoolBtn");
     if(openSchoolBtn) {
         openSchoolBtn.addEventListener("click", () => {
-            const c1 = activeChar.schoolProgress && activeChar.schoolProgress.class1;
+            const sp = activeChar.schoolProgress || {};
+            const c1 = sp.class1;
+            const c2 = sp.class2;
+            
             document.getElementById("chk-class1").textContent = c1 ? "[X]" : "[ ]";
             document.getElementById("name-class1").innerHTML = `<a href="https://adequateremedy.github.io/Runic-Fally/" style="color: #e3d2b9; text-decoration: underline;">Runic-Fally</a>`;
-            document.getElementById("chk-class2").textContent = activeChar.schoolProgress && activeChar.schoolProgress.class2 ? "[X]" : "[ ]";
-            document.getElementById("chk-class3").textContent = activeChar.schoolProgress && activeChar.schoolProgress.class3 ? "[X]" : "[ ]";
-            document.getElementById("chk-class4").textContent = activeChar.schoolProgress && activeChar.schoolProgress.class4 ? "[X]" : "[ ]";
-            document.getElementById("chk-class5").textContent = activeChar.schoolProgress && activeChar.schoolProgress.class5 ? "[X]" : "[ ]";
+            
+            document.getElementById("chk-class2").textContent = c2 ? "[X]" : "[ ]";
+            if (c2) {
+                document.getElementById("name-class2").innerHTML = `<span style="color: #666; text-decoration: line-through;">Trade & Tally</span>`;
+            } else {
+                document.getElementById("name-class2").innerHTML = `<a href="https://adequateremedy.github.io/Trade-and-Tally/" style="color: #e3d2b9; text-decoration: underline;">Trade & Tally</a>`;
+            }
+
+            document.getElementById("chk-class3").textContent = sp.class3 ? "[X]" : "[ ]";
+            document.getElementById("chk-class4").textContent = sp.class4 ? "[X]" : "[ ]";
+            document.getElementById("chk-class5").textContent = sp.class5 ? "[X]" : "[ ]";
             document.getElementById("schoolModal").classList.remove("hidden");
         });
     }
