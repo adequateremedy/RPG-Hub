@@ -1,77 +1,80 @@
+<!-- templates/steampunk.html -->
 <div id="gen-1-content">
     <!-- TIER 3: SECTION SELECTION -->
     <div class="tabs tier-3">
-        <button class="tab-btn active" data-target="tab-character">Character Card</button>
-        <button class="tab-btn" data-target="tab-available">Available</button>
+        <button class="tab-btn" id="open-character-modal-btn" style="color: #ff9800; font-weight: bold; border-bottom: 2px solid transparent;">Character Card</button>
+        <button class="tab-btn active" data-target="tab-available">Available</button>
         <button class="tab-btn" data-target="tab-inventory">Inventory</button>
         <button class="tab-btn" data-target="tab-journal">Journal</button>
         <button class="tab-btn" data-target="tab-gallery">Gallery</button>
         <button class="tab-btn" data-target="tab-members" id="tab-members-btn">Members</button>
     </div>
 
-    <!-- CHARACTER CARD TAB -->
-    <div id="tab-character" class="hub-section active">
-        
-        <div class="card-container">
-            <!-- Portrait -->
-            <div id="ui-portrait-container">
-                <img id="ui-portrait-img" src="" alt="">
-                <button id="ui-portrait-upload-btn" class="hidden">Upload Image</button>
-                <input type="file" id="portrait-file-input" accept="image/*" class="hidden">
-            </div>
-
-            <div id="ui-name" class="abs-stat">Unborn</div>
+    <!-- MY CHARACTER CARD MODAL -->
+    <div id="myCharacterModal" class="modal-overlay hidden">
+        <div class="modal-box" style="padding: 0; background: transparent; border: none; box-shadow: none; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center;">
+            <button id="closeMyCharacterBtn" class="lightbox-close" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">&times;</button>
             
-            <div id="edit-name-container" class="hidden">
-                <input type="text" id="edit-name-input" placeholder="Enter Character Name">
-                <button id="save-name-btn" type="button">Save</button>
-            </div>
-
-            <div id="ui-lvl-container">
-                <div class="lvl-label">Lvl</div>
-                <div id="ui-lvl">1</div>
-            </div>
-            
-            <div id="ui-exp-container">
-                <div class="exp-label">EXP</div>
-                <div id="ui-exp">0</div>
-            </div>
-
-            <div class="stat-group">
-                <div class="stat-row">
-                    <div class="stat-label">Bloodline Court:</div>
-                    <div class="stat-val abs-stat-text" id="ui-bloodline">---</div>
-                </div>
-                <div class="stat-row">
-                    <div class="stat-label">Birth Court:</div>
-                    <div class="stat-val abs-stat-text" id="ui-birthcourt">---</div>
-                </div>
-                <div class="stat-row">
-                    <div class="stat-label">Essence Type:</div>
-                    <div class="stat-val abs-stat-text" id="ui-essence">---</div>
-                </div>
-                <div class="stat-row">
-                    <div class="stat-label">Trigger:</div>
-                    <div class="stat-val abs-stat-text" id="ui-trigger">---</div>
+            <div class="card-container" style="margin: 0; transform: scale(min(calc(95vw / 600), calc(95vh / 900))); transform-origin: center;">
+                <!-- Portrait -->
+                <div id="ui-portrait-container">
+                    <img id="ui-portrait-img" src="" alt="">
+                    <button id="ui-portrait-upload-btn" class="hidden">Upload Image</button>
+                    <input type="file" id="portrait-file-input" accept="image/*" class="hidden">
                 </div>
 
-                <div class="power-section">Magic Power</div>
-
-                <div class="magic-row">
-                    <div class="stat-label">Offensive: <span id="ui-off-name" style="font-weight:normal;">---</span></div>
-                    <div class="stat-val">DMG: <span id="ui-off-dmg">---</span></div>
+                <div id="ui-name" class="abs-stat">Unborn</div>
+                
+                <div id="edit-name-container" class="hidden">
+                    <input type="text" id="edit-name-input" placeholder="Enter Character Name">
+                    <button id="save-name-btn" type="button">Save</button>
                 </div>
-                <div class="magic-row">
-                    <div class="stat-label">Defensive: <span id="ui-def-name" style="font-weight:normal;">---</span></div>
-                    <div class="stat-val">HP: <span id="ui-def-hp">---</span></div>
+
+                <div id="ui-lvl-container">
+                    <div class="lvl-label">Lvl</div>
+                    <div id="ui-lvl">1</div>
+                </div>
+                
+                <div id="ui-exp-container">
+                    <div class="exp-label">EXP</div>
+                    <div id="ui-exp">0</div>
+                </div>
+
+                <div class="stat-group">
+                    <div class="stat-row">
+                        <div class="stat-label">Bloodline Court:</div>
+                        <div class="stat-val abs-stat-text" id="ui-bloodline">---</div>
+                    </div>
+                    <div class="stat-row">
+                        <div class="stat-label">Birth Court:</div>
+                        <div class="stat-val abs-stat-text" id="ui-birthcourt">---</div>
+                    </div>
+                    <div class="stat-row">
+                        <div class="stat-label">Essence Type:</div>
+                        <div class="stat-val abs-stat-text" id="ui-essence">---</div>
+                    </div>
+                    <div class="stat-row">
+                        <div class="stat-label">Trigger:</div>
+                        <div class="stat-val abs-stat-text" id="ui-trigger">---</div>
+                    </div>
+
+                    <div class="power-section">Magic Power</div>
+
+                    <div class="magic-row">
+                        <div class="stat-label">Offensive: <span id="ui-off-name" style="font-weight:normal;">---</span></div>
+                        <div class="stat-val">DMG: <span id="ui-off-dmg">---</span></div>
+                    </div>
+                    <div class="magic-row">
+                        <div class="stat-label">Defensive: <span id="ui-def-name" style="font-weight:normal;">---</span></div>
+                        <div class="stat-val">HP: <span id="ui-def-hp">---</span></div>
+                    </div>
                 </div>
             </div>
         </div>
-
     </div>
 
     <!-- AVAILABLE TAB -->
-    <div id="tab-available" class="hub-section">
+    <div id="tab-available" class="hub-section active">
         <h2 style="text-align:center; margin-top:20px;">Available Actions</h2>
         <div id="actionsContainer" style="margin-top:20px; display:flex; flex-direction:column; align-items:center;"></div>
     </div>
