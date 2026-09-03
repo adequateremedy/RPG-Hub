@@ -1031,6 +1031,7 @@ async function handleUserReady(user) {
     const urlParams = new URLSearchParams(window.location.search);
     const urlBirthCourt = urlParams.get('birthCourt');
     const urlBloodlineCourt = urlParams.get('bloodlineCourt');
+    const class1Complete = urlParams.get('class1Complete');
     const class2Complete = urlParams.get('class2Complete');
     let dataChanged = false;
 
@@ -1038,6 +1039,13 @@ async function handleUserReady(user) {
         activeChar.birthCourt = urlBirthCourt;
         activeChar.bloodlineCourt = urlBloodlineCourt;
         activeChar.birthBookCompleted = true;
+        dataChanged = true;
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    if (class1Complete === "true" && activeChar.schoolProgress && !activeChar.schoolProgress.class1) {
+        activeChar.schoolProgress.class1 = true;
+        activeChar.exp = (activeChar.exp || 0) + 100;
         dataChanged = true;
         window.history.replaceState({}, document.title, window.location.pathname);
     }
