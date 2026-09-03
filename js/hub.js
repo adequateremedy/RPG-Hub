@@ -1004,12 +1004,20 @@ async function handleUserReady(user) {
     const urlParams = new URLSearchParams(window.location.search);
     const urlBirthCourt = urlParams.get('birthCourt');
     const urlBloodlineCourt = urlParams.get('bloodlineCourt');
+    const class2Complete = urlParams.get('class2Complete');
     let dataChanged = false;
 
     if (urlBirthCourt && urlBloodlineCourt && !activeChar.birthCourt) {
         activeChar.birthCourt = urlBirthCourt;
         activeChar.bloodlineCourt = urlBloodlineCourt;
         activeChar.birthBookCompleted = true;
+        dataChanged = true;
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    if (class2Complete === "true" && activeChar.schoolProgress && !activeChar.schoolProgress.class2) {
+        activeChar.schoolProgress.class2 = true;
+        activeChar.exp = (activeChar.exp || 0) + 100;
         dataChanged = true;
         window.history.replaceState({}, document.title, window.location.pathname);
     }
