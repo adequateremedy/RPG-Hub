@@ -90,9 +90,14 @@ function attachJournalModalListeners() {
         const text = textarea.value.trim();
         const words = text.split(/\s+/).filter(w => w.length > 0).length;
         const files = queuedJournalImages;
+        const selectedSceneId = journalSceneSelect.value;
 
         if (words < 500) return alert(`Your entry is ${words} words. A minimum of 500 words is required for Solo Writing.`);
         if (files.length < 3 || files.length > 10) return alert(`You selected ${files.length} images. You must upload between 3 and 10 images for Journals.`);
+
+        // Prevent double-clicking
+        saveBtn.disabled = true;
+        saveBtn.textContent = "Uploading... Please wait";
 
         window.HubAPI.showLoading("Saving journal entry and uploading images. Please wait...");
         
@@ -105,6 +110,7 @@ function attachJournalModalListeners() {
             const newEntry = {
                 date: new Date().toLocaleString(),
                 ageGroup: currentAgeGroup,
+                sceneId: selectedSceneId,
                 text: text,
                 images: imageFileIds
             };
@@ -124,6 +130,10 @@ function attachJournalModalListeners() {
             console.error(err);
             window.HubAPI.hideLoading();
             alert("Failed to save journal entry. Check console for details.");
+            
+            // Re-enable button if it failed so they can try again
+            saveBtn.disabled = false;
+            saveBtn.textContent = "Save Journal Entry (+10 EXP)";
         }
     });
 }
@@ -190,6 +200,10 @@ function attachRpModalListeners() {
         if (words < 500) return alert(`Your story is ${words} words. A minimum of 500 words is required for RP Sessions.`);
         if (files.length < 5 || files.length > 10) return alert(`You selected ${files.length} images. You must upload between 5 and 10 images for RP Sessions.`);
 
+        // Prevent double-clicking
+        saveBtn.disabled = true;
+        saveBtn.textContent = "Uploading... Please wait";
+
         window.HubAPI.showLoading("Saving RP session and uploading images. Please wait...");
         
         try {
@@ -221,6 +235,10 @@ function attachRpModalListeners() {
             console.error(err);
             window.HubAPI.hideLoading();
             alert("Failed to submit RP session. Check console for details.");
+            
+            // Re-enable button if it failed so they can try again
+            saveBtn.disabled = false;
+            saveBtn.textContent = "Submit RP Session (+10 EXP)";
         }
     });
 }
@@ -229,7 +247,13 @@ export function renderJournalModalContent() {
     const currentAgeGroup = getCurrentAgeGroup();
     const data = window.HubAPI.getPlayerData();
     const activeChar = data.stars[window.HubAPI.getActiveStar()].gens[window.HubAPI.getActiveGen()];
-    const ageJournalsCount = (activeChar.journalEntries || []).filter(e => (e.ageGroup || "2-3") === currentAgeGroup).length;
+    
+    // Filter out scenes they have already completed
+    const completedScenes = (activeChar.journalEntries || [])
+        .filter(e => (e.ageGroup || "2-3") === currentAgeGroup)
+        .map(e => e.sceneId || "");
+
+    const ageJournalsCount = completedScenes.length;
     const container = document.getElementById("journalModalContent");
 
     if (ageJournalsCount >= 3) {
@@ -243,6 +267,11 @@ export function renderJournalModalContent() {
         return;
     }
 
+    // Determine which dropdown options to hide based on completed history
+    const hideOpt1 = completedScenes.includes("1") ? "disabled hidden" : "";
+    const hideOpt2 = completedScenes.includes("2") ? "disabled hidden" : "";
+    const hideOpt3 = completedScenes.includes("3") ? "disabled hidden" : "";
+
     container.innerHTML = `
         <h2 style="margin-top:0; color:#e3d2b9; border-bottom:1px solid #444; padding-bottom:10px; text-align:center;">Solo Journal</h2>
         <p style="text-align:center; font-weight:bold; color:#7F522B; margin-top:0;">Age ${currentAgeGroup} Journals Completed: ${ageJournalsCount} / 3</p>
@@ -254,9 +283,9 @@ export function renderJournalModalContent() {
             <label style="font-weight:bold; color:#7F522B;">Choose a Lore Scene:</label>
             <select id="journalSceneSelect" style="width:100%; padding:10px; margin-top:8px; background:#222; color:#fff; border:1px solid #444; font-family:inherit; border-radius:4px;">
                 <option value="">-- Select Scene --</option>
-                <option value="1">${journalPromptsByAge[currentAgeGroup]["1"].title}</option>
-                <option value="2">${journalPromptsByAge[currentAgeGroup]["2"].title}</option>
-                <option value="3">${journalPromptsByAge[currentAgeGroup]["3"].title}</option>
+                <option value="1" ${hideOpt1}>${journalPromptsByAge[currentAgeGroup]["1"].title}</option>
+                <option value="2" ${hideOpt2}>${journalPromptsByAge[currentAgeGroup]["2"].title}</option>
+                <option value="3" ${hideOpt3}>${journalPromptsByAge[currentAgeGroup]["3"].title}</option>
             </select>
         </div>
 
