@@ -27,7 +27,6 @@ setPersistence(auth, browserLocalPersistence).catch((error) => {
 
 const provider = new GoogleAuthProvider();
 provider.addScope('https://www.googleapis.com/auth/drive.appdata');
-// provider.setCustomParameters({ prompt: 'consent' });
 
 const DEFAULT_PORTRAIT = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='170' height='170' viewBox='0 0 170 170'%3E%3Crect width='170' height='170' fill='%231a1a1a'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23e3d2b9' font-family='sans-serif' font-size='14'%3ENo Image%3C/text%3E%3C/svg%3E";
 
@@ -721,10 +720,31 @@ async function uploadImageToDrive(file) {
     return result.id;
 }
 
-async function getImageUrl(fileId) {
-    const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+// Upgraded getImageUrl with Error Handling and Silent Token Refresh
+async function getImageUrl(fileId, retry = true) {
+    let res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
         headers: { 'Authorization': `Bearer ${gDriveToken}` }
     });
+    
+    if (res.status === 401 && retry) {
+        try {
+            provider.setCustomParameters({ prompt: 'none' });
+            const result = await signInWithPopup(auth, provider);
+            const credential = GoogleAuthProvider.credentialFromResult(result);
+            gDriveToken = credential.accessToken;
+            localStorage.setItem("gDriveToken", gDriveToken);
+            
+            // Retry the fetch one time with the fresh token
+            return await getImageUrl(fileId, false);
+        } catch (err) {
+            throw new Error("Session expired and could not be silently refreshed.");
+        }
+    }
+    
+    if (!res.ok) {
+        throw new Error(`Failed to fetch image. Status: ${res.status}`);
+    }
+    
     const blob = await res.blob();
     return URL.createObjectURL(blob);
 }
@@ -820,43 +840,59 @@ async function renderJournalAndGallery() {
 
     let hasImages = !!activeChar.birthCourt;
     
+    // Lazy-load Journal Images
     for (let i = 0; i < jEntries.length; i++) {
         const entry = jEntries[i];
         if (entry.images && entry.images.length > 0) {
             hasImages = true;
-            entry.images.forEach(async (fileId, imgIndex) => {
+            entry.images.forEach((fileId, imgIndex) => {
                 const labelName = `Solo Journal (${entry.date}) — Image ${imgIndex + 1}`;
                 const li = document.createElement("li");
                 li.className = "gallery-item";
                 li.textContent = labelName;
-                try {
-                    const url = await getImageUrl(fileId);
-                    li.addEventListener("click", () => {
+                
+                li.addEventListener("click", async () => {
+                    showLoading("Loading image from Drive...");
+                    try {
+                        const url = await getImageUrl(fileId);
                         lightboxImg.src = url;
                         lightboxModal.classList.remove("hidden");
-                    });
-                } catch (e) { console.error(e); }
+                    } catch (e) {
+                        console.error(e);
+                        alert("Failed to load image. If your session expired, try refreshing the page.");
+                    }
+                    hideLoading();
+                });
+                
                 galleryListContainer.appendChild(li);
             });
         }
     }
 
+    // Lazy-load RP Images
     for (let i = 0; i < rpEntries.length; i++) {
         const entry = rpEntries[i];
         if (entry.images && entry.images.length > 0) {
             hasImages = true;
-            entry.images.forEach(async (fileId, imgIndex) => {
+            entry.images.forEach((fileId, imgIndex) => {
                 const labelName = `Live RP Session (${entry.date}) — Image ${imgIndex + 1}`;
                 const li = document.createElement("li");
                 li.className = "gallery-item";
                 li.textContent = labelName;
-                try {
-                    const url = await getImageUrl(fileId);
-                    li.addEventListener("click", () => {
+                
+                li.addEventListener("click", async () => {
+                    showLoading("Loading image from Drive...");
+                    try {
+                        const url = await getImageUrl(fileId);
                         lightboxImg.src = url;
                         lightboxModal.classList.remove("hidden");
-                    });
-                } catch (e) { console.error(e); }
+                    } catch (e) {
+                        console.error(e);
+                        alert("Failed to load image. If your session expired, try refreshing the page.");
+                    }
+                    hideLoading();
+                });
+                
                 galleryListContainer.appendChild(li);
             });
         }
@@ -1180,16 +1216,25 @@ if (closeMemberCardBtn) {
     });
 }
 
+// Lightbox Memory Cleanup Logic
+function closeLightbox() {
+    if (lightboxModal) {
+        lightboxModal.classList.add("hidden");
+        if (lightboxImg && lightboxImg.src && lightboxImg.src.startsWith('blob:')) {
+            URL.revokeObjectURL(lightboxImg.src);
+            lightboxImg.src = "";
+        }
+    }
+}
+
 if (lightboxCloseBtn) {
-    lightboxCloseBtn.addEventListener("click", () => {
-        if (lightboxModal) lightboxModal.classList.add("hidden");
-    });
+    lightboxCloseBtn.addEventListener("click", closeLightbox);
 }
 
 if (lightboxModal) {
     lightboxModal.addEventListener("click", (e) => {
         if (e.target === lightboxModal) {
-            lightboxModal.classList.add("hidden");
+            closeLightbox();
         }
     });
 }
