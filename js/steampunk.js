@@ -450,7 +450,7 @@ export function renderAvailableActions(actionsContainer, activeChar) {
             if (c1) {
                 document.getElementById("name-class1").innerHTML = `<span style="color: #666; text-decoration: line-through;">Runic-Fally</span>`;
             } else {
-                document.getElementById("name-class1").innerHTML = `<a href="https://adequateremedy.github.io/Runic-Fally/" style="color: #e3d2b9; text-decoration: underline;">Runic-Fally</a>`;
+                document.getElementById("name-class1").innerHTML = `<a href="https://adequateremedy.github.io/Eidolon-School/runic-fally/" style="color: #e3d2b9; text-decoration: underline;">Runic-Fally</a>`;
             }
             
             // Class 2 Logic (Requires Class 1)
@@ -460,7 +460,7 @@ export function renderAvailableActions(actionsContainer, activeChar) {
                 document.getElementById("name-class2").innerHTML = `<span style="color: #666; text-decoration: line-through;">Trade & Tally</span>`;
             } else if (c1) {
                 // Class 1 is done, Class 2 is unlocked and ready to play
-                document.getElementById("name-class2").innerHTML = `<a href="https://adequateremedy.github.io/Trade-and-Tally/" style="color: #e3d2b9; text-decoration: underline;">Trade & Tally</a>`;
+                document.getElementById("name-class2").innerHTML = `<a href="https://adequateremedy.github.io/Eidolon-School/trade-and-tally/" style="color: #e3d2b9; text-decoration: underline;">Trade & Tally</a>`;
             } else {
                 // Class 1 is NOT done, so Class 2 remains locked
                 document.getElementById("name-class2").innerHTML = `<span style="color: #888;">Trade & Tally (Locked)</span>`;
